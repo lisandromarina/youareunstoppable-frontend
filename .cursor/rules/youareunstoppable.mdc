@@ -1,0 +1,18 @@
+---
+description: YouAreUnstoppable product constraints for the frontend
+alwaysApply: true
+---
+
+# YouAreUnstoppable
+
+The unit is a day, not a habit. The signature is the transformation grid.
+
+Before UI work, read `docs/experience.md` and `docs/implementation.md`.
+
+- Background `#0F0E17`, text `#FFFFFE`, accent `#FF8906`.
+- Orange is for completed days, streaks, primary actions, and progress.
+- Today opens on the day number and "Today is another chance to prove it."
+- Voice stays short. Use "Show up.", "Day complete.", "Another vote for who you're becoming."
+- The prototype is client-side mock data. Today starts incomplete and fills only after check-in.
+- The only live API route is `GET /api/hello`. Do not call routes that do not exist.
+- React Router, Tailwind, shadcn/ui, Framer Motion, and Zustand are planned, not installed. Add one only when a screen needs it.

@@ -10,6 +10,25 @@ The main experience revolves around daily commitments, day completion, streaks, 
 
 ---
 
+## Current state
+
+The product is specified and not built. `src/App.tsx` is still the Vite starter.
+
+React, TypeScript, and Vite are installed. React Router, Tailwind CSS, shadcn/ui, Framer Motion, and Zustand are planned and not installed yet.
+
+---
+
+## Documentation
+
+| Doc | What it covers |
+| --- | --- |
+| [docs/experience.md](docs/experience.md) | Screens, voice, design system, prototype data |
+| [docs/implementation.md](docs/implementation.md) | How to build the React app, and what exists today |
+
+Read those before changing the UI.
+
+---
+
 ## Tech Stack
 
 * React
