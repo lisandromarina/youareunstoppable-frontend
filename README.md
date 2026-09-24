@@ -12,9 +12,9 @@ The main experience revolves around daily commitments, day completion, streaks, 
 
 ## Current state
 
-The product is specified and not built. `src/App.tsx` is still the Vite starter.
+Sign-in is live. The day, the grid, the journal, and the coach are still shells.
 
-React, TypeScript, and Vite are installed. React Router, Tailwind CSS, shadcn/ui, Framer Motion, and Zustand are planned and not installed yet.
+React, TypeScript, Vite, React Router, Zustand, Tailwind CSS, and shadcn/ui are installed. Framer Motion is planned and not installed yet.
 
 ---
 
@@ -24,6 +24,7 @@ React, TypeScript, and Vite are installed. React Router, Tailwind CSS, shadcn/ui
 | --- | --- |
 | [docs/experience.md](docs/experience.md) | Screens, voice, design system, prototype data |
 | [docs/implementation.md](docs/implementation.md) | How to build the React app, and what exists today |
+| [docs/auth-decisions.md](docs/auth-decisions.md) | Why the frontend session works this way |
 
 Read those before changing the UI.
 
@@ -34,16 +35,16 @@ Read those before changing the UI.
 * React
 * TypeScript
 * Vite
+* React Router
+* Zustand
+* Tailwind CSS
+* shadcn/ui
 * Node.js
 * npm
 
 Planned technologies:
 
-* React Router
-* Tailwind CSS
-* shadcn/ui
 * Framer Motion
-* Zustand
 
 ---
 

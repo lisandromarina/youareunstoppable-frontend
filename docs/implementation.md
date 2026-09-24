@@ -4,7 +4,7 @@ How to build the React app. Screen copy, feeling, and the interaction checklist 
 
 ## Current state
 
-The product is specified and not built. `src/App.tsx` is the Vite starter.
+Sign-in is live. The day, the grid, the journal, and the coach are still shells. Identity choices stay in memory for this browser. They are not on the API yet.
 
 Installed today, from `package.json`:
 
@@ -12,28 +12,48 @@ Installed today, from `package.json`:
 - TypeScript
 - Vite 8
 - oxlint
+- React Router
+- Zustand
+- Tailwind CSS
+- shadcn/ui
 
 Planned, and not installed yet:
 
-- React Router
-- Tailwind CSS
-- shadcn/ui
 - Framer Motion
-- Zustand
 
-Do not describe those libraries as part of the running app until they are in `package.json`. Add one only when a screen needs it, then record it here and in the README.
+Do not describe Framer Motion as part of the running app until it is in `package.json`. Add it only when a screen needs it, then record it here and in the README.
 
 ## Build order
 
 Ship a client-only, mobile-first prototype with mock data first.
 
-The Today screen, the completion animation, and the Journey grid do not wait on the API. Wire the backend after that loop feels right: open the app, complete commitments, close the day, and see the new block in the grid.
+The Today screen, the completion animation, and the Journey grid do not wait on the API. Wire those after that loop feels right: open the app, complete commitments, close the day, and see the new block in the grid.
+
+## Session
+
+Why these choices were made is in [auth-decisions.md](auth-decisions.md).
+
+The browser never reads the auth cookies. `src/api/client.ts` calls relative `/api/...` with `credentials: "include"`. Vite proxies `/api` to `http://localhost:8000`, so both cookies stay on the app origin. The refresh cookie path is still `/api/auth`.
+
+`src/session/store.ts` holds `unknown`, `anonymous`, or `authenticated`, plus the user from the API. Boot calls `GET /api/me`. A `401` refreshes once through `POST /api/auth/refresh`. Parallel `401`s share that refresh. Login and Google do not refresh, because their `401` means the credential was rejected.
+
+`/` is onboarding. **Start my transformation** opens `/register`. **I already have an account** opens `/sign-in`. Register continues to `/becoming`. Sign-in opens `/today`. A signed-in visit to `/`, `/register`, or `/sign-in` opens `/today`. Routes from `/becoming` through `/pro` wait until the session is authenticated. While the session is still unknown, the screen stays on `#0F0E17`.
+
+Google sign-in posts an ID token to `POST /api/auth/google`. Set `VITE_GOOGLE_CLIENT_ID` in `.env.local` to the same value as the API's `GOOGLE_CLIENT_ID`. When it is unset, the Google control is hidden.
+
+Profile shows the email and plan from `GET /api/me`. `has_password` is false for a Google-only account, and that account can set a password once. Sign out calls `POST /api/auth/logout`.
+
+Chosen traits and the future-self text live in `src/data/identity.ts` for this browser only. A new device does not restore them.
+
+The app and the API have to share a site in production. These cookies are `SameSite=Lax`.
 
 ## Target shape
 
 Routes:
 
 - `/` onboarding
+- `/register` account creation
+- `/sign-in` return visit
 - `/becoming` identity chips
 - `/future-self` future-self text
 - `/transformation` reveal
@@ -68,6 +88,8 @@ Suggested layout once the starter is replaced:
 
 ```text
 src/
+├── api/
+│   └── client.ts
 ├── components/
 │   ├── BottomNav.tsx
 │   ├── CommitmentRow.tsx
@@ -78,7 +100,10 @@ src/
 │   └── ShareCard.tsx
 ├── pages/
 ├── data/
+│   ├── identity.ts
 │   └── prototype.ts
+├── session/
+│   └── store.ts
 ├── App.tsx
 └── main.tsx
 ```
@@ -118,7 +143,7 @@ Day intensities:
 | Completed | Solid `#FF8906` |
 | Exceptional | Strongest orange, slightly brighter or larger presence |
 
-Layout is mobile-first. On a wide desktop, keep the app in a phone-width frame on the dark background.
+Layout is mobile-first and fills the browser. Type, spacing, and columns grow with the viewport. There is no phone-width frame. shadcn/ui components live in `src/components/ui`, themed with the tokens above. On small screens the primary navigation sits on the bottom. From the `md` breakpoint up it sits across the top.
 
 Grid cells are square elements, not text characters. Filling a completed day is an animation, not an instant color swap. "See my journey" navigates to the grid and highlights the new day.
 
@@ -127,7 +152,7 @@ Grid cells are square elements, not text characters. Filling a completed day is 
 - Today opens on the day number and the line "Today is another chance to prove it.", then the commitments.
 - The coach is a short insight plus four actions, not a chat transcript.
 - Journey stats use large personal figures, not a dashboard of charts.
-- Do not call API routes the backend does not have. The only live route today is `GET /api/hello`.
+- Auth calls are register, login, Google, set password, refresh, logout, and `GET /api/me`. Do not call Checkout, the billing portal, or other routes the backend does not have. `GET /api/hello` is also live. **Become Unstoppable** does not call Stripe.
 - Do not install a planned library until a screen needs it.
 
 ## Run
@@ -149,18 +174,14 @@ npm run preview
 
 Output goes to `dist/`.
 
-Later, the API base URL uses the `VITE_` prefix:
+Local API requests go to `/api` on the Vite origin. The dev server proxies them to `http://localhost:8000`. Do not point the browser at that host for auth. The cookies would be set on a different origin.
+
+Google sign-in, when used:
 
 ```text
-VITE_API_URL=http://localhost:8000
+VITE_GOOGLE_CLIENT_ID=
 ```
 
-Put that in `.env.local`. Do not commit that file if it holds secrets.
+Put that in `.env.local`. Do not commit that file if it holds secrets. The value has to match the API's `GOOGLE_CLIENT_ID`.
 
-Local API, once the backend is running:
-
-```text
-http://localhost:8000
-```
-
-The production target is Vercel for the frontend, with FastAPI and managed PostgreSQL added when the prototype loop is in place. Local development does not use Docker.
+The production target is Vercel for the frontend, with FastAPI and managed PostgreSQL on the same site so `SameSite=Lax` cookies are sent. Local development does not use Docker.
