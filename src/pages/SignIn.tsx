@@ -6,11 +6,15 @@ export function SignIn() {
 
   return (
     <CredentialScreen
+      eyebrow="Sign in"
       title="Show up."
+      lede="Welcome back. Your days are waiting."
       submitLabel="Sign in"
       passwordAutoComplete="current-password"
       minPassword={1}
-      alternate={{ to: '/register', label: 'Start my transformation' }}
+      googleLabel="Sign in with Google"
+      googleText="signin_with"
+      alternate={{ to: '/register', label: 'Create an account' }}
       next="/today"
       onSubmit={login}
     />

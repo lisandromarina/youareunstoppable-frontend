@@ -38,13 +38,13 @@ Left out: tokens in Zustand, `localStorage`, or component state. A password-rese
 
 ## Where register and sign-in go
 
-Onboarding is the front door. A new person and a returning person leave it on different paths.
+Sign-in is the front door. Create account is the next screen, reached from the link at the bottom.
 
-`/` is the onboarding screen from [experience.md](experience.md), full screen, outside the bottom bar. **Start my transformation** opens `/register`. **I already have an account** opens `/sign-in`. Register continues to `/becoming`. Sign-in opens `/today`. Routes from `/becoming` through `/pro` render only when `status` is `authenticated`. While `status` is `unknown`, the screen stays on `#0F0E17` so onboarding does not flash.
+`/` is sign-in, full screen, outside the bottom bar. The second step is `/register`. `/sign-in` opens `/`. Register continues to `/becoming`. Sign-in opens `/today`. Routes from `/becoming` through `/pro` render only when `status` is `authenticated`. While `status` is `unknown`, the screen stays on `#0F0E17` so the form does not flash.
 
 A signed-in visit to `/`, `/register`, or `/sign-in` opens `/today`. That check remembers the status from the moment the session first became known. A register that has just succeeded can still navigate to `/becoming`. If the guard treated every authenticated render as "already signed in," it would send that new account to Today and skip identity.
 
-The API does not say whether Google created the row or signed an existing one in. The screen they used decides the next route. Google on register continues into onboarding. Google on sign-in opens Today.
+The API does not say whether Google created the row or signed an existing one in. The screen they used decides the next route. Google on register continues to `/becoming`. Google on sign-in opens Today.
 
 Left out: a created-versus-returning flag on `POST /api/auth/google`. Sending every signed-in person through identity again.
 

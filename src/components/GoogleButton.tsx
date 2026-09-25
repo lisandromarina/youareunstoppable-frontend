@@ -6,6 +6,8 @@ import { loadGoogleScript } from '../google'
 
 type GoogleButtonProps = {
   disabled?: boolean
+  label: string
+  text: 'signin_with' | 'signup_with'
   onCredential: (idToken: string) => void
 }
 
@@ -43,7 +45,7 @@ function GoogleMark() {
   )
 }
 
-export function GoogleButton({ disabled = false, onCredential }: GoogleButtonProps) {
+export function GoogleButton({ disabled = false, label, text, onCredential }: GoogleButtonProps) {
   const clientId = import.meta.env.GOOGLE_CLIENT_ID
   const host = useRef<HTMLDivElement>(null)
   const onCredentialRef = useRef(onCredential)
@@ -76,7 +78,7 @@ export function GoogleButton({ disabled = false, onCredential }: GoogleButtonPro
       window.google.accounts.id.renderButton(node, {
         theme: 'filled_black',
         size: 'large',
-        text: 'continue_with',
+        text,
         shape: 'rectangular',
         width: 400,
       })
@@ -101,7 +103,7 @@ export function GoogleButton({ disabled = false, onCredential }: GoogleButtonPro
       cancelled = true
       observer.disconnect()
     }
-  }, [clientId])
+  }, [clientId, text])
 
   if (!clientId) return null
   if (failed) return <p className="text-sm font-semibold text-primary">Google sign-in could not be loaded.</p>
@@ -113,7 +115,7 @@ export function GoogleButton({ disabled = false, onCredential }: GoogleButtonPro
         className="flex w-full items-center justify-center gap-3 rounded-2xl border border-border bg-card px-5 py-4 text-base font-bold transition-colors group-hover:border-primary"
       >
         <GoogleMark />
-        Continue with Google
+        {label}
       </div>
       <div ref={host} className="absolute inset-0 overflow-hidden opacity-0" />
     </div>

@@ -90,27 +90,15 @@ Bottom navigation:
 3. **Journal**
 4. **Profile**
 
-Onboarding and the day-completion moment are full-screen and sit outside this bar.
+Sign-in, create account, and the day-completion moment are full-screen and sit outside this bar.
 
 ## Screens
 
-### 1. Onboarding
+### 1. Sign in, then create account
 
-Full-screen dark cinematic onboarding.
+The first screen is sign-in. **Create an account** at the bottom opens the create-account screen. **I already have an account** returns to sign-in. Each screen names itself once, above the headline.
 
-Headline:
-
-> You know you can become more.
-
-Subheadline:
-
-> The problem isn't knowing what you should do.
->
-> It's showing up consistently.
-
-Primary CTA: **Start my transformation →**
-
-Secondary: **I already have an account**
+Sign-in headline: **Show up.** Create-account headline: **Start my transformation.**
 
 ### 2. Define yourself
 
@@ -498,7 +486,7 @@ Populate earlier days with a mix of completed, missed, strong, and exceptional d
 
 The prototype has to support all of these:
 
-1. Onboarding
+1. Sign in, then create account
 2. Identity selection
 3. Future-self text input
 4. Transformation generation

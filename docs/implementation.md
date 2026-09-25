@@ -37,7 +37,7 @@ The browser never reads the auth cookies. `src/api/client.ts` calls relative `/a
 
 `src/session/store.ts` holds `unknown`, `anonymous`, or `authenticated`, plus the user from the API. Boot calls `GET /api/me`. A `401` refreshes once through `POST /api/auth/refresh`. Parallel `401`s share that refresh. Login and Google do not refresh, because their `401` means the credential was rejected.
 
-`/` is onboarding. **Start my transformation** opens `/register`. **I already have an account** opens `/sign-in`. Register continues to `/becoming`. Sign-in opens `/today`. A signed-in visit to `/`, `/register`, or `/sign-in` opens `/today`. Routes from `/becoming` through `/pro` wait until the session is authenticated. While the session is still unknown, the screen stays on `#0F0E17`.
+`/` is sign-in. **Create an account** opens `/register`. Register continues to `/becoming`. Sign-in opens `/today`. `/sign-in` opens `/`. A signed-in visit to `/` or `/register` opens `/today`. Routes from `/becoming` through `/pro` wait until the session is authenticated. While the session is still unknown, the screen stays on `#0F0E17`.
 
 Google sign-in posts an ID token to `POST /api/auth/google`. Set `GOOGLE_CLIENT_ID` in `.env.local` to the same value as the API's `GOOGLE_CLIENT_ID`. Vite exposes that name to the sign-in screen. When it is unset, the Google control is hidden.
 
@@ -51,9 +51,9 @@ The app and the API have to share a site in production. These cookies are `SameS
 
 Routes:
 
-- `/` onboarding
-- `/register` account creation
-- `/sign-in` return visit
+- `/` sign-in
+- `/register` create account
+- `/sign-in` opens `/`
 - `/becoming` identity chips
 - `/future-self` future-self text
 - `/transformation` reveal

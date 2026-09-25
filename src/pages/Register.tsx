@@ -6,11 +6,16 @@ export function Register() {
 
   return (
     <CredentialScreen
+      eyebrow="Create account"
       title="Start my transformation."
-      submitLabel="Start my transformation →"
+      lede="A new account. Then you choose who you're becoming."
+      submitLabel="Create account"
       passwordAutoComplete="new-password"
+      passwordHint="At least 8 characters."
       minPassword={8}
-      alternate={{ to: '/sign-in', label: 'I already have an account' }}
+      googleLabel="Sign up with Google"
+      googleText="signup_with"
+      alternate={{ to: '/', label: 'I already have an account' }}
       next="/becoming"
       onSubmit={register}
     />

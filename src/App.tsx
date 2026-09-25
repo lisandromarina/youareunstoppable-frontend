@@ -6,7 +6,6 @@ import { RequireAuth, PublicOnly } from './components/SessionGate'
 import { useSession } from './session/store'
 import { Becoming } from './pages/Becoming'
 import { FutureSelf } from './pages/FutureSelf'
-import { Onboarding } from './pages/Onboarding'
 import { Profile } from './pages/Profile'
 import { Pro } from './pages/Pro'
 import { Register } from './pages/Register'
@@ -32,9 +31,9 @@ export default function App() {
       ) : null}
       <Routes>
         <Route element={<PublicOnly />}>
-          <Route path="/" element={<Onboarding />} />
+          <Route path="/" element={<SignIn />} />
+          <Route path="/sign-in" element={<Navigate to="/" replace />} />
           <Route path="/register" element={<Register />} />
-          <Route path="/sign-in" element={<SignIn />} />
         </Route>
         <Route element={<RequireAuth />}>
           <Route path="/becoming" element={<Becoming />} />
