@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vite'
 
 export default defineConfig({
+  envPrefix: ['VITE_', 'GOOGLE_CLIENT_ID'],
   plugins: [react(), tailwindcss()],
   resolve: {
     alias: {

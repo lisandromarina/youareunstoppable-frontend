@@ -35,7 +35,7 @@ export function CredentialScreen({
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [pending, setPending] = useState(false)
-  const googleReady = Boolean(import.meta.env.VITE_GOOGLE_CLIENT_ID)
+  const googleReady = Boolean(import.meta.env.GOOGLE_CLIENT_ID)
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()

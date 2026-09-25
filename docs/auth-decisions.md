@@ -52,7 +52,7 @@ Left out: a created-versus-returning flag on `POST /api/auth/google`. Sending ev
 
 The API verifies a Google ID token. It does not run the browser redirect itself.
 
-The register and sign-in screens load Google Identity Services and post `{ "id_token" }` to `POST /api/auth/google`. `VITE_GOOGLE_CLIENT_ID` is public and has to equal the API's `GOOGLE_CLIENT_ID`. When that value is unset, the Google control is hidden, so the screen never hits `Google sign-in is not configured.`
+The register and sign-in screens load Google Identity Services and post `{ "id_token" }` to `POST /api/auth/google`. The frontend `GOOGLE_CLIENT_ID` has to equal the API's `GOOGLE_CLIENT_ID`. Vite exposes that name so the Google button can use it. When that value is unset, the Google control is hidden, so the screen never hits `Google sign-in is not configured.`
 
 Left out: the authorization-code redirect, and a client secret in the frontend.
 

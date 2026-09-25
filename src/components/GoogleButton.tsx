@@ -44,7 +44,7 @@ function GoogleMark() {
 }
 
 export function GoogleButton({ disabled = false, onCredential }: GoogleButtonProps) {
-  const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID
+  const clientId = import.meta.env.GOOGLE_CLIENT_ID
   const host = useRef<HTMLDivElement>(null)
   const onCredentialRef = useRef(onCredential)
   const disabledRef = useRef(disabled)

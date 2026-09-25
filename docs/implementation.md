@@ -39,7 +39,7 @@ The browser never reads the auth cookies. `src/api/client.ts` calls relative `/a
 
 `/` is onboarding. **Start my transformation** opens `/register`. **I already have an account** opens `/sign-in`. Register continues to `/becoming`. Sign-in opens `/today`. A signed-in visit to `/`, `/register`, or `/sign-in` opens `/today`. Routes from `/becoming` through `/pro` wait until the session is authenticated. While the session is still unknown, the screen stays on `#0F0E17`.
 
-Google sign-in posts an ID token to `POST /api/auth/google`. Set `VITE_GOOGLE_CLIENT_ID` in `.env.local` to the same value as the API's `GOOGLE_CLIENT_ID`. When it is unset, the Google control is hidden.
+Google sign-in posts an ID token to `POST /api/auth/google`. Set `GOOGLE_CLIENT_ID` in `.env.local` to the same value as the API's `GOOGLE_CLIENT_ID`. Vite exposes that name to the sign-in screen. When it is unset, the Google control is hidden.
 
 Profile shows the email and plan from `GET /api/me`. `has_password` is false for a Google-only account, and that account can set a password once. Sign out calls `POST /api/auth/logout`.
 
@@ -179,7 +179,7 @@ Local API requests go to `/api` on the Vite origin. The dev server proxies them 
 Google sign-in, when used:
 
 ```text
-VITE_GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_ID=
 ```
 
 Put that in `.env.local`. Do not commit that file if it holds secrets. The value has to match the API's `GOOGLE_CLIENT_ID`.
