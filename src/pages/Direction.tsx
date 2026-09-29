@@ -1,5 +1,7 @@
+import { useEffect } from 'react'
 import { useNavigate, Navigate } from 'react-router'
 
+import { markOnboarding } from '../api/admin'
 import { cn } from 'cn'
 import { PrimaryButton, Screen } from '../components/look'
 import { useRecord } from '../data/record'
@@ -12,6 +14,10 @@ export function Direction() {
   const chooseDirection = useRecord((state) => state.chooseDirection)
   const identities = catalog?.identities.filter((item) => ids.includes(item.id)) ?? []
   const ready = identities.length > 0 && identities.every((item) => chosen[item.id])
+
+  useEffect(() => {
+    void markOnboarding('direction')
+  }, [])
 
   if (ids.length === 0) return <Navigate to="/identity" replace />
 

@@ -67,6 +67,15 @@ export function Profile() {
       <div className="mt-12 border-t border-white/8 pt-8">
         <p className="text-sm text-muted-foreground">{user.email}</p>
         <p className="mt-1 text-sm font-semibold">{user.subscription.plan === 'pro' ? 'Pro' : 'Free'}</p>
+        {user.role === 'admin' ? (
+          <button
+            type="button"
+            className="mt-4 text-sm font-bold text-primary"
+            onClick={() => navigate('/admin')}
+          >
+            Analytics
+          </button>
+        ) : null}
         <SignOut />
       </div>
 

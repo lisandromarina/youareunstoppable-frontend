@@ -1,5 +1,7 @@
+import { useEffect } from 'react'
 import { useNavigate } from 'react-router'
 
+import { markOnboarding } from '../api/admin'
 import { cn } from 'cn'
 import { PrimaryButton, Screen } from '../components/look'
 import { useRecord } from '../data/record'
@@ -18,6 +20,10 @@ export function Identity() {
   const toggleIdentity = useRecord((state) => state.toggleIdentity)
   const names =
     catalog?.identities.filter((item) => ids.includes(item.id)).map((item) => item.name) ?? []
+
+  useEffect(() => {
+    void markOnboarding('identity')
+  }, [])
 
   return (
     <Screen className="min-h-svh max-w-lg!">
