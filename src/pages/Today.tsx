@@ -70,6 +70,7 @@ export function Today() {
   const schedule = useRecord((state) => state.schedule)
   const showUp = useRecord((state) => state.showUp)
   const [sheet, setSheet] = useState<SheetState>(null)
+  const [showDone, setShowDone] = useState(false)
   const [days, setDays] = useState<number[]>([])
   const [monthDay, setMonthDay] = useState(1)
 
@@ -146,90 +147,139 @@ export function Today() {
     }
   }
 
-  return (
-    <Screen className="max-w-lg! pb-40 md:pb-16">
-      {moment ? (
-        <>
-          <h1 className="text-[42px] leading-none font-extrabold tracking-tight">Day {moment.day}</h1>
-          <p className="mt-2 text-sm font-semibold text-muted-foreground">
-            {record.promises_kept}{' '}
-            {record.promises_kept === 1
-              ? 'day you kept a promise to yourself'
-              : 'days you kept promises to yourself'}
-          </p>
-          <p className="mt-6 text-[18px] font-semibold">{record.statement}</p>
-          <p className="mt-8 text-[22px] font-extrabold">{moment.phase}</p>
-          <p className="mt-1 text-sm text-muted-foreground">About {moment.length} days</p>
-          <div className="mt-3 h-1 overflow-hidden rounded-full bg-empty">
-            <div
-              className="h-full rounded-full bg-primary"
-              style={{ width: `${Math.min(100, (moment.day / moment.length) * 100)}%` }}
-            />
-          </div>
-        </>
-      ) : null}
-
-      <div className="mt-10 flex flex-col gap-8">
-        {record.today.groups
-          .filter((group) => group.commitments.length > 0)
-          .map((group) => (
-            <section key={group.identity_id}>
-              <p className="text-[11px] font-extrabold tracking-[0.14em] text-muted-foreground">
-                {group.identity_name.toUpperCase()}
-              </p>
-              {goalsOf(group.commitments).map((goal) => (
-                <div key={goal.name} className="mt-4">
-                  <p className="text-[15px] font-extrabold">{goal.name}</p>
-                  <ul className="mt-1">
-                    {goal.items.map((commitment) => {
-                      const settled = commitment.status !== 'open'
-                      return (
-                        <li key={commitment.id} className="flex items-center gap-1 border-b border-white/8">
-                          <button
-                            type="button"
-                            disabled={closed || pending}
-                            onClick={() => void toggle(commitment.id)}
-                            className="flex min-w-0 flex-1 items-center gap-4 py-4 text-left"
-                          >
+  const activities = (
+    <div className={cn('flex flex-col gap-8 text-left', closed ? 'max-h-[60vh] overflow-y-auto' : 'mt-10')}>
+      {record.today.groups
+        .filter((group) => group.commitments.length > 0)
+        .map((group) => (
+          <section key={group.identity_id}>
+            <p className="text-[11px] font-extrabold tracking-[0.14em] text-muted-foreground">
+              {group.identity_name.toUpperCase()}
+            </p>
+            {goalsOf(group.commitments).map((goal) => (
+              <div key={goal.name} className="mt-4">
+                <p
+                  className={cn(
+                    'text-[15px] font-extrabold',
+                    closed && 'text-primary line-through decoration-primary/70',
+                  )}
+                >
+                  {goal.name}
+                </p>
+                <ul className="mt-1">
+                  {goal.items.map((commitment) => {
+                    const settled = commitment.status !== 'open'
+                    return (
+                      <li
+                        key={commitment.id}
+                        className={cn(
+                          'flex items-center gap-1 border-b border-white/8',
+                          closed && 'border-white/5',
+                        )}
+                      >
+                        <button
+                          type="button"
+                          disabled={closed || pending}
+                          onClick={() => void toggle(commitment.id)}
+                          className={cn(
+                            'flex min-w-0 flex-1 items-center gap-4 py-4 text-left',
+                            closed && 'cursor-default',
+                          )}
+                        >
+                          <span
+                            className={cn(
+                              'size-7 shrink-0 rounded-full border-2 transition',
+                              closed || settled ? 'border-primary bg-primary' : 'border-white/25',
+                              closed && 'opacity-50',
+                            )}
+                          />
+                          <span className="min-w-0">
+                            <span className="block text-[11px] font-extrabold tracking-[0.12em] text-muted-foreground">
+                              {commitment.cadence.toUpperCase()}
+                            </span>
                             <span
                               className={cn(
-                                'size-7 shrink-0 rounded-full border-2 transition',
-                                settled ? 'border-primary bg-primary' : 'border-white/25',
+                                'text-[16px] font-semibold',
+                                closed
+                                  ? 'text-primary line-through decoration-primary/80'
+                                  : commitment.status === 'skipped'
+                                    ? 'text-white/35'
+                                    : undefined,
                               )}
-                            />
-                            <span className="min-w-0">
-                              <span className="block text-[11px] font-extrabold tracking-[0.12em] text-muted-foreground">
-                                {commitment.cadence.toUpperCase()}
-                              </span>
-                              <span
-                                className={cn(
-                                  'text-[16px] font-semibold',
-                                  commitment.status === 'skipped' && 'text-muted-foreground',
-                                )}
-                              >
-                                {commitment.implementation.title}
-                              </span>
-                            </span>
-                          </button>
-                          {closed ? null : (
-                            <button
-                              type="button"
-                              aria-label={`Actions for ${commitment.implementation.title}`}
-                              className="px-2 py-4 text-lg tracking-widest text-muted-foreground"
-                              onClick={() => setSheet({ kind: 'menu', commitment })}
                             >
-                              ···
-                            </button>
-                          )}
-                        </li>
-                      )
-                    })}
-                  </ul>
-                </div>
-              ))}
-            </section>
-          ))}
-      </div>
+                              {commitment.implementation.title}
+                            </span>
+                          </span>
+                        </button>
+                        {closed ? null : (
+                          <button
+                            type="button"
+                            aria-label={`Actions for ${commitment.implementation.title}`}
+                            className="px-2 py-4 text-lg tracking-widest text-muted-foreground"
+                            onClick={() => setSheet({ kind: 'menu', commitment })}
+                          >
+                            ···
+                          </button>
+                        )}
+                      </li>
+                    )
+                  })}
+                </ul>
+              </div>
+            ))}
+          </section>
+        ))}
+    </div>
+  )
+
+  return (
+    <Screen
+      className={cn('max-w-lg!', closed ? 'flex-1 items-center justify-center text-center' : 'pb-40 md:pb-16')}
+    >
+      {moment ? (
+        closed ? (
+          <div className="flex max-w-sm flex-col items-center">
+            <h1 className="text-[40px] leading-[1.05] font-extrabold tracking-tight">
+              Today, you are the person you want to become.
+            </h1>
+            <p className="mt-4 text-[16px] leading-relaxed text-muted-foreground">Come back tomorrow.</p>
+            <button
+              type="button"
+              className="mt-10 text-[15px] font-semibold text-primary"
+              onClick={() => setShowDone(true)}
+            >
+              See today's activities
+            </button>
+          </div>
+        ) : (
+          <>
+            <h1 className="text-[42px] leading-none font-extrabold tracking-tight">Day {moment.day}</h1>
+            <p className="mt-2 text-sm font-semibold text-muted-foreground">
+              {record.promises_kept}{' '}
+              {record.promises_kept === 1
+                ? 'day you kept a promise to yourself'
+                : 'days you kept promises to yourself'}
+            </p>
+            <p className="mt-6 text-[18px] font-semibold">{record.statement}</p>
+            <p className="mt-8 text-[22px] font-extrabold">{moment.phase}</p>
+            <p className="mt-1 text-sm text-muted-foreground">About {moment.length} days</p>
+            <div className="mt-3 h-1 overflow-hidden rounded-full bg-empty">
+              <div
+                className="h-full rounded-full bg-primary"
+                style={{ width: `${Math.min(100, (moment.day / moment.length) * 100)}%` }}
+              />
+            </div>
+          </>
+        )
+      ) : null}
+
+      {closed ? (
+        <Sheet open={showDone} title="Today's activities" onClose={() => setShowDone(false)}>
+          {activities}
+        </Sheet>
+      ) : (
+        activities
+      )}
 
       {record.today.coming_up.length > 0 && !closed ? (
         <section className="mt-10">
@@ -262,10 +312,8 @@ export function Today() {
         </p>
       ) : null}
 
-      <div className="fixed inset-x-0 bottom-[calc(4.6rem+env(safe-area-inset-bottom))] z-30 px-6 md:static md:bottom-auto md:mt-10 md:px-0">
-        {closed ? (
-          <p className="text-center text-[15px] font-semibold text-muted-foreground md:text-left">You showed up.</p>
-        ) : (
+      {closed ? null : (
+        <div className="fixed inset-x-0 bottom-[calc(4.6rem+env(safe-area-inset-bottom))] z-30 px-6 md:static md:bottom-auto md:mt-10 md:px-0">
           <button
             type="button"
             disabled={!ready || pending}
@@ -279,8 +327,8 @@ export function Today() {
           >
             I SHOWED UP
           </button>
-        )}
-      </div>
+        </div>
+      )}
 
       <Sheet open={sheet?.kind === 'menu'} title="Today" onClose={() => setSheet(null)}>
         <SheetChoice

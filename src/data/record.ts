@@ -25,6 +25,13 @@ export type Ceremony = {
   day: number
   length: number
   phase: string
+  next: { identity: string; line: string }[]
+}
+
+export function nextStepLine(selection: Selection): string {
+  if (selection.completed) return 'This path is complete. Tomorrow keeps the same promises.'
+  if (selection.day_in_phase === 1) return `Tomorrow starts ${selection.phase_name}. Day 1.`
+  return `Tomorrow is day ${selection.day_in_phase} of ${selection.phase_name}.`
 }
 
 type Status = 'idle' | 'loading' | 'ready' | 'empty' | 'error'
@@ -272,16 +279,23 @@ export const useRecord = create<RecordState>((set, get) => ({
   showUp: async () => {
     const record = get().record
     const primary = record?.selections[0]
-    if (!primary) return
-    const ceremony = {
-      day: primary.day_in_phase,
-      length: primary.length_days,
-      phase: primary.phase_name,
-    }
+    if (!record || !primary) return
     set({ pending: true, error: null })
     try {
       const next = await showedUp()
-      set({ record: next, pending: false, ceremony })
+      set({
+        record: next,
+        pending: false,
+        ceremony: {
+          day: primary.day_in_phase,
+          length: primary.length_days,
+          phase: primary.phase_name,
+          next: next.selections.map((selection) => ({
+            identity: selection.identity_name,
+            line: nextStepLine(selection),
+          })),
+        },
+      })
     } catch (caught) {
       set({ pending: false, error: errorMessage(caught) })
       throw caught

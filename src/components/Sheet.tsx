@@ -27,7 +27,7 @@ export function Sheet({
         role="dialog"
         aria-modal="true"
         aria-labelledby="sheet-title"
-        className="relative z-10 w-full max-w-lg rounded-t-3xl bg-[#17151f] px-6 pt-3 pb-[max(1.5rem,env(safe-area-inset-bottom))] shadow-[0_-20px_60px_rgba(0,0,0,0.35)]"
+        className="relative z-10 w-full max-w-lg rounded-t-3xl bg-[#17151f] px-6 pt-3 pb-[max(1.5rem,env(safe-area-inset-bottom))] text-left shadow-[0_-20px_60px_rgba(0,0,0,0.35)]"
       >
         <div className="mx-auto mb-5 h-1 w-10 rounded-full bg-white/15" />
         <h2 id="sheet-title" className="text-xl font-extrabold">
