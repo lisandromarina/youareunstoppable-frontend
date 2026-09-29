@@ -5,6 +5,7 @@ import { BottomNav } from './components/BottomNav'
 import { RecordGate } from './components/RecordGate'
 import { RequireAuth, PublicOnly } from './components/SessionGate'
 import { useSession } from './session/store'
+import { Admin } from './pages/Admin'
 import { Begin } from './pages/Begin'
 import { DayComplete } from './pages/DayComplete'
 import { Direction } from './pages/Direction'
@@ -33,6 +34,7 @@ export default function App() {
           <Route path="/register" element={<Register />} />
         </Route>
         <Route element={<RequireAuth />}>
+          <Route path="/admin" element={<Admin />} />
           <Route element={<RecordGate />}>
             <Route path="/begin" element={<Begin />} />
             <Route path="/identity" element={<Identity />} />

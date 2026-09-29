@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Navigate, useNavigate } from 'react-router'
 
+import { markOnboarding } from '../api/admin'
 import { GhostButton, PrimaryButton, Screen } from '../components/look'
 import { useRecord } from '../data/record'
 import { useSession } from '../session/store'
@@ -10,6 +11,11 @@ export function Begin() {
   const status = useRecord((state) => state.status)
   const logout = useSession((state) => state.logout)
   const [pending, setPending] = useState(false)
+
+  useEffect(() => {
+    void markOnboarding('begin')
+  }, [])
+
   if (status === 'ready') return <Navigate to="/today" replace />
 
   return (
