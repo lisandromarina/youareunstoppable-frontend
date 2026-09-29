@@ -5,7 +5,7 @@ import { cn } from 'cn'
 const links = [
   { to: '/today', label: 'Today' },
   { to: '/journey', label: 'Journey' },
-  { to: '/journal', label: 'Journal' },
+  { to: '/progress', label: 'Progress' },
   { to: '/profile', label: 'Profile' },
 ]
 

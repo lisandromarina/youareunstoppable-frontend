@@ -143,3 +143,18 @@
 .screen-in {
   animation: fadein 0.35s ease;
 }
+
+@keyframes block-in {
+  from {
+    opacity: 0;
+    transform: scale(0.86);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.block-in {
+  animation: block-in 0.7s ease;
+}
