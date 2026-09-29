@@ -16,7 +16,7 @@ export function Register() {
       googleLabel="Sign up with Google"
       googleText="signup_with"
       alternate={{ to: '/', label: 'I already have an account' }}
-      next="/becoming"
+      next="/begin"
       onSubmit={register}
     />
   )
