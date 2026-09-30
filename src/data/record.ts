@@ -45,7 +45,9 @@ type RecordState = {
   draftIdentityIds: string[]
   draftDirections: Record<string, string>
   ceremony: Ceremony | null
-  load: () => Promise<void>
+  accountId: string | null
+  load: (userId: string) => Promise<void>
+  forget: () => void
   toggleIdentity: (id: string) => void
   chooseDirection: (identityId: string, directionId: string) => void
   beginEdit: () => void
@@ -60,9 +62,13 @@ type RecordState = {
   clearCeremony: () => void
 }
 
-function readDraft(): { ids: string[]; directions: Record<string, string> } {
+function draftKeyFor(userId: string) {
+  return `${draftKey}:${userId}`
+}
+
+function readDraft(userId: string): { ids: string[]; directions: Record<string, string> } {
   try {
-    const raw = sessionStorage.getItem(draftKey)
+    const raw = sessionStorage.getItem(draftKeyFor(userId))
     if (!raw) return { ids: [], directions: {} }
     const parsed = JSON.parse(raw) as { ids?: string[]; directions?: Record<string, string> }
     return {
@@ -75,7 +81,14 @@ function readDraft(): { ids: string[]; directions: Record<string, string> } {
 }
 
 function writeDraft(ids: string[], directions: Record<string, string>) {
-  sessionStorage.setItem(draftKey, JSON.stringify({ ids, directions }))
+  const userId = useRecord.getState().accountId
+  if (!userId) return
+  sessionStorage.setItem(draftKeyFor(userId), JSON.stringify({ ids, directions }))
+}
+
+function clearDraft(userId: string | null) {
+  sessionStorage.removeItem(draftKey)
+  if (userId) sessionStorage.removeItem(draftKeyFor(userId))
 }
 
 function draftFrom(record: Transformation): { ids: string[]; directions: Record<string, string> } {
@@ -163,13 +176,22 @@ export const useRecord = create<RecordState>((set, get) => ({
   draftIdentityIds: [],
   draftDirections: {},
   ceremony: null,
+  accountId: null,
 
-  load: async () => {
-    set({ status: 'loading', error: null })
+  load: async (userId) => {
+    set({
+      status: 'loading',
+      error: null,
+      record: null,
+      ceremony: null,
+      accountId: userId,
+      draftIdentityIds: [],
+      draftDirections: {},
+    })
     try {
       const [catalog, record] = await Promise.all([loadCatalog(), loadTransformation()])
-      const stored = readDraft()
-      const draft = record ? draftFrom(record) : stored
+      if (get().accountId !== userId) return
+      const draft = record ? draftFrom(record) : readDraft(userId)
       set({
         status: record ? 'ready' : 'empty',
         catalog,
@@ -177,10 +199,26 @@ export const useRecord = create<RecordState>((set, get) => ({
         draftIdentityIds: draft.ids,
         draftDirections: draft.directions,
         error: null,
+        accountId: userId,
       })
     } catch (caught) {
+      if (get().accountId !== userId) return
       set({ status: 'error', error: errorMessage(caught) })
     }
+  },
+
+  forget: () => {
+    clearDraft(get().accountId)
+    set({
+      status: 'idle',
+      record: null,
+      error: null,
+      pending: false,
+      draftIdentityIds: [],
+      draftDirections: {},
+      ceremony: null,
+      accountId: null,
+    })
   },
 
   toggleIdentity: (id) => {
@@ -217,7 +255,7 @@ export const useRecord = create<RecordState>((set, get) => ({
     set({ pending: true, error: null })
     try {
       const record = await startTransformation(selectionsOf(draftIdentityIds, draftDirections))
-      sessionStorage.removeItem(draftKey)
+      clearDraft(get().accountId)
       set({ record, status: 'ready', pending: false })
     } catch (caught) {
       set({ pending: false, error: errorMessage(caught) })
@@ -310,7 +348,7 @@ export const useRecord = create<RecordState>((set, get) => ({
     set({ pending: true, error: null })
     try {
       await resetTransformation()
-      sessionStorage.removeItem(draftKey)
+      clearDraft(get().accountId)
       set({
         record: null,
         status: 'empty',

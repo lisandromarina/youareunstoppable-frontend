@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 
 import { api, installSessionHandlers } from '../api/client'
+import { useRecord } from '../data/record'
 import type { SessionStatus, User } from './types'
 
 type SessionState = {
@@ -41,16 +42,19 @@ export const useSession = create<SessionState>((set) => ({
 
   register: async (email, password) => {
     const user = await postUser('/api/auth/register', { email, password })
+    useRecord.getState().forget()
     set({ status: 'authenticated', user, closedMessage: null })
   },
 
   login: async (email, password) => {
     const user = await postUser('/api/auth/login', { email, password })
+    useRecord.getState().forget()
     set({ status: 'authenticated', user, closedMessage: null })
   },
 
   signInWithGoogle: async (idToken) => {
     const user = await postUser('/api/auth/google', { id_token: idToken })
+    useRecord.getState().forget()
     set({ status: 'authenticated', user, closedMessage: null })
   },
 
@@ -66,6 +70,7 @@ export const useSession = create<SessionState>((set) => ({
 
   logout: async () => {
     await api<void>('/api/auth/logout', { method: 'POST' })
+    useRecord.getState().forget()
     set({ status: 'anonymous', user: null, closedMessage: null })
   },
 
@@ -74,9 +79,11 @@ export const useSession = create<SessionState>((set) => ({
 
 installSessionHandlers({
   onUnauthenticated() {
+    useRecord.getState().forget()
     useSession.setState({ status: 'anonymous', user: null })
   },
   onClosed(message) {
+    useRecord.getState().forget()
     useSession.setState({ status: 'anonymous', user: null, closedMessage: message })
   },
 })
