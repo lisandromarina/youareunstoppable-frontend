@@ -1,6 +1,7 @@
 import { cn } from 'cn'
 
 import type { YearDay } from '../api/record'
+import { shownIntensity } from '../data/record'
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
@@ -61,7 +62,7 @@ export function YearGrid({ days }: { days: YearDay[] }) {
             title={day.date}
             className={cn(
               'aspect-square w-full rounded-[1px]',
-              yearFill(day.intensity),
+              yearFill(shownIntensity(day.intensity, day.closed)),
               day.today && 'outline outline-1 -outline-offset-1 outline-white/80',
             )}
           />

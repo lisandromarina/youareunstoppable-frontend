@@ -128,6 +128,10 @@ export function phaseMoment(selection: Selection, closed: boolean) {
   }
 }
 
+export function shownIntensity(intensity: number, closed: boolean) {
+  return closed ? Math.max(intensity, 1) : intensity
+}
+
 export function phaseLevels(year: YearDay[], selection: Selection, closed: boolean) {
   const moment = phaseMoment(selection, closed)
   const levels = Array.from({ length: moment.length }, () => 0)
@@ -135,7 +139,7 @@ export function phaseLevels(year: YearDay[], selection: Selection, closed: boole
   const levelFor = (day: YearDay) =>
     day.identities.find((item) => item.identity_id === selection.identity_id)?.intensity ?? 0
   finished.forEach((day, index) => {
-    if (index < levels.length) levels[index] = levelFor(day)
+    if (index < levels.length) levels[index] = shownIntensity(levelFor(day), true)
   })
   if (!closed && moment.filled < levels.length) {
     const today = year.find((day) => day.today)
