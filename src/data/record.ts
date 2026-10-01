@@ -20,18 +20,84 @@ import {
 } from '../api/record'
 
 const draftKey = 'yau-onboarding'
+const ceremonyKey = 'yau-ceremony'
 
-export type Ceremony = {
-  day: number
+export type PhaseShift = {
+  identity: string
+  finishedName: string
+  finishedHeadline: string
   length: number
-  phase: string
-  next: { identity: string; line: string }[]
+  nextName: string | null
+  nextHeadline: string | null
 }
 
-export function nextStepLine(selection: Selection): string {
-  if (selection.completed) return 'This path is complete. Tomorrow keeps the same promises.'
-  if (selection.day_in_phase === 1) return `Tomorrow starts ${selection.phase_name}. Day 1.`
-  return `Tomorrow is day ${selection.day_in_phase} of ${selection.phase_name}.`
+export type Ceremony = {
+  shifts: PhaseShift[]
+}
+
+export function continueBecoming(statement: string) {
+  const rest = statement.replace(/^I['’]m becoming\s+/i, '').replace(/\.$/, '')
+  return `Tomorrow, you continue becoming ${rest}.`
+}
+
+export function isAway(record: Transformation) {
+  if (record.today.closed || !record.prior_closed_on) return false
+  return record.prior_closed_on < dayBefore(record.today.date)
+}
+
+export function phaseShifts(before: Transformation, after: Transformation): PhaseShift[] {
+  return before.selections.flatMap((prev) => {
+    if (prev.completed || prev.day_in_phase !== prev.length_days) return []
+    const next = after.selections.find((item) => item.identity_id === prev.identity_id)
+    if (!next) return []
+    const pathComplete = next.completed && next.stage_name === prev.stage_name
+    const moved = next.stage_name !== prev.stage_name
+    if (!pathComplete && !moved) return []
+    return [
+      {
+        identity: prev.identity_name,
+        finishedName: prev.stage_name,
+        finishedHeadline: prev.phase_name,
+        length: prev.length_days,
+        nextName: pathComplete ? null : next.stage_name,
+        nextHeadline: pathComplete ? null : next.phase_name,
+      },
+    ]
+  })
+}
+
+function dayBefore(iso: string) {
+  const [year, month, day] = iso.split('-').map(Number)
+  const date = new Date(year, month - 1, day)
+  date.setDate(date.getDate() - 1)
+  const nextMonth = String(date.getMonth() + 1).padStart(2, '0')
+  const nextDay = String(date.getDate()).padStart(2, '0')
+  return `${date.getFullYear()}-${nextMonth}-${nextDay}`
+}
+
+function ceremonyStorageKey(userId: string) {
+  return `${ceremonyKey}:${userId}`
+}
+
+function rememberShifts(userId: string, date: string, shifts: PhaseShift[]) {
+  sessionStorage.setItem(ceremonyStorageKey(userId), JSON.stringify({ date, shifts }))
+}
+
+export function shiftsFor(userId: string | null, date: string): PhaseShift[] {
+  if (!userId) return []
+  try {
+    const raw = sessionStorage.getItem(ceremonyStorageKey(userId))
+    if (!raw) return []
+    const parsed = JSON.parse(raw) as { date?: string; shifts?: PhaseShift[] }
+    if (parsed.date !== date || !Array.isArray(parsed.shifts)) return []
+    return parsed.shifts
+  } catch {
+    return []
+  }
+}
+
+function clearCeremonyStore(userId: string | null) {
+  if (userId) sessionStorage.removeItem(ceremonyStorageKey(userId))
 }
 
 type Status = 'idle' | 'loading' | 'ready' | 'empty' | 'error'
@@ -209,6 +275,7 @@ export const useRecord = create<RecordState>((set, get) => ({
 
   forget: () => {
     clearDraft(get().accountId)
+    clearCeremonyStore(get().accountId)
     set({
       status: 'idle',
       record: null,
@@ -320,23 +387,17 @@ export const useRecord = create<RecordState>((set, get) => ({
 
   showUp: async () => {
     const record = get().record
-    const primary = record?.selections[0]
-    if (!record || !primary) return
+    const accountId = get().accountId
+    if (!record) return
     set({ pending: true, error: null })
     try {
       const next = await showedUp()
+      const shifts = phaseShifts(record, next)
+      if (accountId) rememberShifts(accountId, next.today.date, shifts)
       set({
         record: next,
         pending: false,
-        ceremony: {
-          day: primary.day_in_phase,
-          length: primary.length_days,
-          phase: primary.phase_name,
-          next: next.selections.map((selection) => ({
-            identity: selection.identity_name,
-            line: nextStepLine(selection),
-          })),
-        },
+        ceremony: { shifts },
       })
     } catch (caught) {
       set({ pending: false, error: errorMessage(caught) })
@@ -349,6 +410,7 @@ export const useRecord = create<RecordState>((set, get) => ({
     try {
       await resetTransformation()
       clearDraft(get().accountId)
+      clearCeremonyStore(get().accountId)
       set({
         record: null,
         status: 'empty',

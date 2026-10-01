@@ -14,6 +14,7 @@ import { Journey } from './pages/Journey'
 import { Path } from './pages/Path'
 import { Profile } from './pages/Profile'
 import { Progress } from './pages/Progress'
+import { Invite } from './pages/Invite'
 import { Register } from './pages/Register'
 import { SignIn } from './pages/SignIn'
 import { Today } from './pages/Today'
@@ -29,8 +30,8 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         <Route element={<PublicOnly />}>
-          <Route path="/" element={<SignIn />} />
-          <Route path="/sign-in" element={<Navigate to="/" replace />} />
+          <Route path="/" element={<Invite />} />
+          <Route path="/sign-in" element={<SignIn />} />
           <Route path="/register" element={<Register />} />
         </Route>
         <Route element={<RequireAuth />}>

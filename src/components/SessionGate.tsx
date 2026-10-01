@@ -28,6 +28,6 @@ export function PublicOnly() {
 export function RequireAuth() {
   const status = useSession((state) => state.status)
   if (status === 'unknown') return <Ground />
-  if (status !== 'authenticated') return <Navigate to="/" replace />
+  if (status !== 'authenticated') return <Navigate to="/sign-in" replace />
   return <Outlet />
 }

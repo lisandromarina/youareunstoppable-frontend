@@ -15,7 +15,7 @@ export function Register() {
       minPassword={8}
       googleLabel="Sign up with Google"
       googleText="signup_with"
-      alternate={{ to: '/', label: 'I already have an account' }}
+      alternate={{ to: '/sign-in', label: 'I already have an account' }}
       next="/begin"
       onSubmit={register}
     />

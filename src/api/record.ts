@@ -110,6 +110,12 @@ export type YearDay = {
   identities: { identity_id: string; intensity: number }[]
 }
 
+export type TomorrowItem = {
+  identity_name: string
+  title: string
+  cadence: string
+}
+
 export type Transformation = {
   statement: string
   selections: Selection[]
@@ -129,6 +135,8 @@ export type Transformation = {
   }
   year: YearDay[]
   promises_kept: number
+  tomorrow: TomorrowItem[]
+  prior_closed_on: string | null
 }
 
 export type SelectionInput = {
