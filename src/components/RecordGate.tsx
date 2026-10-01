@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { Component, useEffect, type ReactNode } from 'react'
 import { Outlet } from 'react-router'
 
 import { useRecord } from '../data/record'
@@ -32,5 +32,30 @@ export function RecordGate() {
     )
   }
 
-  return <Outlet />
+  return (
+    <PathBoundary>
+      <Outlet />
+    </PathBoundary>
+  )
+}
+
+class PathBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
+  state = { failed: false }
+
+  static getDerivedStateFromError() {
+    return { failed: true }
+  }
+
+  render() {
+    if (!this.state.failed) return this.props.children
+    return (
+      <Screen className="min-h-svh max-w-lg!">
+        <h1 className="text-[28px] font-extrabold">The path didn't load.</h1>
+        <p className="mt-3 text-[15px] text-muted-foreground">Refresh the page and try again.</p>
+        <PrimaryButton className="mt-8" type="button" onClick={() => window.location.reload()}>
+          Try again
+        </PrimaryButton>
+      </Screen>
+    )
+  }
 }

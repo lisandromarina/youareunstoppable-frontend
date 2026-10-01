@@ -135,8 +135,8 @@ export type Transformation = {
   }
   year: YearDay[]
   promises_kept: number
-  tomorrow: TomorrowItem[]
-  prior_closed_on: string | null
+  tomorrow?: TomorrowItem[]
+  prior_closed_on?: string | null
 }
 
 export type SelectionInput = {
