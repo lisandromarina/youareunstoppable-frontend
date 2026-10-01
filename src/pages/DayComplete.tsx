@@ -14,7 +14,7 @@ export function DayComplete() {
   if (!record) return null
   if (!record.today.closed) return <Navigate to="/today" replace />
 
-  const shifts = ceremony ? ceremony.shifts : shiftsFor(accountId, record.today.date)
+  const shifts = ceremony?.shifts ?? shiftsFor(accountId, record.today.date)
 
   return (
     <Screen className="min-h-svh max-w-lg!">

@@ -291,7 +291,7 @@ export function Today() {
         activities
       )}
 
-      {record.today.coming_up.length > 0 && !closed ? (
+      {record.today.coming_up?.length > 0 && !closed ? (
         <section className="mt-10">
           <p className="text-[11px] font-extrabold tracking-[0.14em] text-muted-foreground">Coming up</p>
           <ul className="mt-2">

@@ -4,9 +4,10 @@ export function TomorrowList({
   items,
   showIdentity,
 }: {
-  items: TomorrowItem[]
+  items?: TomorrowItem[]
   showIdentity: boolean
 }) {
+  if (!items) return null
   return (
     <div className="mt-10 w-full text-left">
       <p className="text-[11px] font-extrabold tracking-[0.14em] text-muted-foreground">Tomorrow</p>
