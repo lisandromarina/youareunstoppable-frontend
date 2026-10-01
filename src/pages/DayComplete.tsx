@@ -1,25 +1,39 @@
 import { Navigate, useNavigate } from 'react-router'
 
+import { TomorrowList } from '../components/TomorrowList'
 import { PrimaryButton, Screen } from '../components/look'
-import { useRecord } from '../data/record'
+import { continueBecoming, shiftsFor, useRecord, type PhaseShift } from '../data/record'
 
 export function DayComplete() {
   const navigate = useNavigate()
+  const record = useRecord((state) => state.record)
   const ceremony = useRecord((state) => state.ceremony)
+  const accountId = useRecord((state) => state.accountId)
   const clearCeremony = useRecord((state) => state.clearCeremony)
 
-  if (!ceremony) return <Navigate to="/today" replace />
+  if (!record) return null
+  if (!record.today.closed) return <Navigate to="/today" replace />
+
+  const shifts = ceremony ? ceremony.shifts : shiftsFor(accountId, record.today.date)
 
   return (
-    <Screen className="min-h-svh max-w-lg! items-center justify-center text-center">
-      <div className="max-w-sm">
-        <h1 className="text-[42px] leading-[1.05] font-extrabold tracking-tight">
-          Today, you are the person you want to become.
-        </h1>
-        <p className="mt-6 text-[18px] leading-relaxed text-muted-foreground">
-          Come back tomorrow. More activities will be here, on the way to that person.
-        </p>
-      </div>
+    <Screen className="min-h-svh max-w-lg!">
+      {shifts.length > 0 ? (
+        <div className="flex flex-col gap-12">
+          {shifts.map((shift) => (
+            <PhaseMoment key={shift.identity} shift={shift} showIdentity={shifts.length > 1} />
+          ))}
+        </div>
+      ) : (
+        <div className="max-w-sm">
+          <h1 className="text-[42px] leading-[1.05] font-extrabold tracking-tight">Day complete</h1>
+          <p className="mt-6 text-[18px] leading-relaxed">You kept today's promises.</p>
+          <p className="mt-2 text-[18px] leading-relaxed text-muted-foreground">
+            {continueBecoming(record.statement)}
+          </p>
+        </div>
+      )}
+      <TomorrowList items={record.tomorrow} showIdentity={record.selections.length > 1} />
       <PrimaryButton
         className="mt-10"
         type="button"
@@ -31,5 +45,36 @@ export function DayComplete() {
         Done for today
       </PrimaryButton>
     </Screen>
+  )
+}
+
+function PhaseMoment({ shift, showIdentity }: { shift: PhaseShift; showIdentity: boolean }) {
+  return (
+    <section className="max-w-sm">
+      {showIdentity ? (
+        <p className="text-[11px] font-extrabold tracking-[0.14em] text-muted-foreground">
+          {shift.identity.toUpperCase()}
+        </p>
+      ) : null}
+      <h1 className="text-[42px] leading-[1.05] font-extrabold tracking-tight">
+        {shift.finishedName} complete.
+      </h1>
+      <p className="mt-6 text-[18px] leading-relaxed">
+        {shift.length} {shift.length === 1 ? 'day' : 'days'} of {shift.finishedHeadline}.
+      </p>
+      <p className="mt-2 text-[18px] leading-relaxed text-muted-foreground">You don't need to start over.</p>
+      {shift.nextName ? (
+        <>
+          <p className="text-[18px] leading-relaxed text-muted-foreground">You move forward.</p>
+          <p className="mt-8 text-[11px] font-extrabold tracking-[0.14em] text-primary">Next phase</p>
+          <p className="mt-2 text-[26px] font-extrabold">{shift.nextName}</p>
+          {shift.nextHeadline && shift.nextHeadline !== shift.nextName ? (
+            <p className="mt-1 text-[16px] text-muted-foreground">{shift.nextHeadline}</p>
+          ) : null}
+        </>
+      ) : (
+        <p className="text-[18px] leading-relaxed text-muted-foreground">Tomorrow keeps the same promises.</p>
+      )}
+    </section>
   )
 }

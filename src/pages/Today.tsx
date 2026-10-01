@@ -4,8 +4,9 @@ import { cn } from 'cn'
 import type { Commitment, Upcoming } from '../api/record'
 import { PremiumSoon } from '../components/PremiumSoon'
 import { Sheet, SheetChoice } from '../components/Sheet'
+import { TomorrowList } from '../components/TomorrowList'
 import { Screen } from '../components/look'
-import { phaseMoment, useRecord } from '../data/record'
+import { continueBecoming, isAway, phaseMoment, useRecord } from '../data/record'
 
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 
@@ -238,11 +239,14 @@ export function Today() {
     >
       {moment ? (
         closed ? (
-          <div className="flex max-w-sm flex-col items-center">
+          <div className="flex w-full max-w-sm flex-col items-center">
             <h1 className="text-[40px] leading-[1.05] font-extrabold tracking-tight">
               Today, you are the person you want to become.
             </h1>
-            <p className="mt-4 text-[16px] leading-relaxed text-muted-foreground">Come back tomorrow.</p>
+            <p className="mt-4 text-[16px] leading-relaxed text-muted-foreground">
+              {continueBecoming(record.statement)}
+            </p>
+            <TomorrowList items={record.tomorrow} showIdentity={record.selections.length > 1} />
             <button
               type="button"
               className="mt-10 text-[15px] font-semibold text-primary"
@@ -253,6 +257,12 @@ export function Today() {
           </div>
         ) : (
           <>
+            {isAway(record) ? (
+              <div className="mb-10">
+                <p className="text-[42px] leading-none font-extrabold tracking-tight">You're back.</p>
+                <p className="mt-3 text-[18px] font-semibold text-muted-foreground">Nothing was lost.</p>
+              </div>
+            ) : null}
             <h1 className="text-[42px] leading-none font-extrabold tracking-tight">Day {moment.day}</h1>
             <p className="mt-2 text-sm font-semibold text-muted-foreground">
               {record.promises_kept}{' '}
