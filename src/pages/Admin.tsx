@@ -33,7 +33,7 @@ export function Admin() {
         Back to profile
       </Link>
 
-      {error ? <p className="mt-8 text-sm font-semibold text-primary">{error}</p> : null}
+      {error ? <p className="mt-8 text-sm font-semibold text-destructive">{error}</p> : null}
       {!analytics && !error ? <p className="mt-8 text-sm text-muted-foreground">Loading</p> : null}
       {analytics ? <Dashboard analytics={analytics} /> : null}
     </Screen>

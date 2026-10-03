@@ -28,13 +28,9 @@ export function Progress() {
       <p className="mt-1 text-sm text-muted-foreground">
         About {moment?.length ?? progress.length_days} days
       </p>
-      <div className="mt-3 h-1 overflow-hidden rounded-full bg-empty">
-        <div className="h-full rounded-full bg-primary" style={{ width: `${width}%` }} />
+      <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-empty">
+        <div className="progress-fill h-full rounded-full bg-primary" style={{ width: `${width}%` }} />
       </div>
-      <p className="mt-8 text-[11px] font-extrabold tracking-[0.14em] text-muted-foreground">
-        Days you kept promises to yourself
-      </p>
-      <p className="mt-2 text-[22px] font-extrabold">{record.promises_kept}</p>
       <p className="mt-8 text-[11px] font-extrabold tracking-[0.14em] text-muted-foreground">Commitments</p>
       <p className="mt-2 text-[22px] font-extrabold">
         {progress.commitments_done} / {progress.commitments_total} completed
@@ -46,7 +42,15 @@ export function Progress() {
         </>
       ) : null}
       <div className="mt-14">
-        <YearGrid days={record.year} />
+        <p className="text-[42px] leading-none font-extrabold tracking-tight">{record.promises_kept}</p>
+        <p className="mt-2 text-sm font-semibold text-muted-foreground">
+          {record.promises_kept === 1
+            ? 'day you kept a promise to yourself'
+            : 'days you kept promises to yourself'}
+        </p>
+        <div className="mt-8">
+          <YearGrid days={record.year} />
+        </div>
       </div>
       <PremiumSoon />
     </Screen>

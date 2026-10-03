@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Navigate, useNavigate } from 'react-router'
 
 import { cn } from 'cn'
+import { IdentityLabel, PhaseDot } from '../components/identityTint'
 import { PrimaryButton, Screen } from '../components/look'
 import { useRecord } from '../data/record'
 
@@ -48,19 +49,12 @@ export function Path() {
           const first = direction.phases[0]
           return (
             <section key={identity.id}>
-              <p className="text-[11px] font-extrabold tracking-[0.14em] text-muted-foreground">
-                {identity.name.toUpperCase()}
-              </p>
+              <IdentityLabel identityId={identity.id}>{identity.name.toUpperCase()}</IdentityLabel>
               <ol className="mt-4 flex flex-col">
                 {direction.phases.map((phase, index) => (
                   <li key={phase.id} className="flex gap-3">
                     <span className="flex flex-col items-center">
-                      <span
-                        className={cn(
-                          'mt-1 size-2.5 rounded-full',
-                          index === 0 ? 'bg-primary' : 'bg-white/15',
-                        )}
-                      />
+                      <PhaseDot identityId={identity.id} status={index === 0 ? 'current' : 'upcoming'} />
                       {index < direction.phases.length - 1 ? (
                         <span className="my-1 h-6 w-px bg-white/10" />
                       ) : null}
@@ -84,7 +78,7 @@ export function Path() {
         })}
       </div>
       {failed ? (
-        <p className="mt-6 text-sm font-semibold text-primary" role="alert">
+        <p className="mt-6 text-sm font-semibold text-destructive" role="alert">
           {failed}
         </p>
       ) : null}

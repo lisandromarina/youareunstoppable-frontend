@@ -3,11 +3,11 @@ import { NavLink, Outlet } from 'react-router'
 import { cn } from 'cn'
 
 const links = [
-  { to: '/today', label: 'Today' },
-  { to: '/journey', label: 'Journey' },
-  { to: '/progress', label: 'Progress' },
-  { to: '/profile', label: 'Profile' },
-]
+  { to: '/today', label: 'Today', mark: 'today' },
+  { to: '/journey', label: 'Journey', mark: 'journey' },
+  { to: '/progress', label: 'Progress', mark: 'progress' },
+  { to: '/profile', label: 'Profile', mark: 'profile' },
+] as const
 
 export function BottomNav() {
   return (
@@ -30,11 +30,63 @@ export function BottomNav() {
               )
             }
           >
-            <span className="size-[18px] rounded-md border-2 border-current" />
+            <NavMark kind={link.mark} />
             {link.label}
           </NavLink>
         ))}
       </nav>
     </div>
+  )
+}
+
+function NavMark({ kind }: { kind: (typeof links)[number]['mark'] }) {
+  const common = {
+    viewBox: '0 0 18 18',
+    className: 'size-[18px]',
+    'aria-hidden': true as const,
+  }
+
+  if (kind === 'today') {
+    return (
+      <svg {...common}>
+        <circle cx="9" cy="9" r="6.25" fill="none" stroke="currentColor" strokeWidth="1.75" />
+        <circle cx="9" cy="9" r="2.2" fill="currentColor" />
+      </svg>
+    )
+  }
+
+  if (kind === 'journey') {
+    return (
+      <svg {...common}>
+        <path d="M9 3.5v11" stroke="currentColor" strokeWidth="1.5" />
+        <circle cx="9" cy="4" r="1.6" fill="currentColor" />
+        <circle cx="9" cy="9" r="1.6" fill="currentColor" />
+        <circle cx="9" cy="14" r="1.6" fill="currentColor" />
+      </svg>
+    )
+  }
+
+  if (kind === 'progress') {
+    return (
+      <svg {...common}>
+        <rect x="2.5" y="2.5" width="5" height="5" rx="1.2" fill="currentColor" />
+        <rect x="10.5" y="2.5" width="5" height="5" rx="1.2" fill="currentColor" opacity="0.4" />
+        <rect x="2.5" y="10.5" width="5" height="5" rx="1.2" fill="currentColor" opacity="0.4" />
+        <rect x="10.5" y="10.5" width="5" height="5" rx="1.2" fill="currentColor" />
+      </svg>
+    )
+  }
+
+  return (
+    <svg {...common}>
+      <circle cx="9" cy="6.1" r="2.35" fill="currentColor" />
+      <path
+        d="M4.4 15.1c.85-2.55 2.45-3.8 4.6-3.8s3.75 1.25 4.6 3.8"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.75"
+        strokeLinecap="round"
+      />
+    </svg>
   )
 }

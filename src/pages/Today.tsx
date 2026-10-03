@@ -2,10 +2,12 @@ import { useState } from 'react'
 import { Navigate, useNavigate } from 'react-router'
 import { cn } from 'cn'
 import type { Commitment, Upcoming } from '../api/record'
+import { IdentityLabel } from '../components/identityTint'
+import { identityTint } from '../components/tints'
 import { PremiumSoon } from '../components/PremiumSoon'
 import { Sheet, SheetChoice } from '../components/Sheet'
 import { TomorrowList } from '../components/TomorrowList'
-import { Screen } from '../components/look'
+import { Screen, WarmGlow } from '../components/look'
 import { continueBecoming, isAway, phaseMoment, useRecord } from '../data/record'
 
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
@@ -74,6 +76,7 @@ export function Today() {
   const [showDone, setShowDone] = useState(false)
   const [days, setDays] = useState<number[]>([])
   const [monthDay, setMonthDay] = useState(1)
+  const [lit, setLit] = useState<string | null>(null)
 
   if (status === 'empty') return <Navigate to="/begin" replace />
   if (!record) return null
@@ -103,6 +106,19 @@ export function Today() {
     setDays((current) =>
       current.includes(day) ? current.filter((item) => item !== day) : [...current, day].sort((a, b) => a - b),
     )
+  }
+
+  async function onToggle(id: string) {
+    const before = commitments.find((item) => item.id === id)
+    await toggle(id)
+    const after = useRecord
+      .getState()
+      .record?.today.groups.flatMap((group) => group.commitments)
+      .find((item) => item.id === id)
+    if (before?.status === 'open' && after?.status === 'done') {
+      setLit(null)
+      requestAnimationFrame(() => setLit(id))
+    }
   }
 
   async function onShowUp() {
@@ -154,19 +170,10 @@ export function Today() {
         .filter((group) => group.commitments.length > 0)
         .map((group) => (
           <section key={group.identity_id}>
-            <p className="text-[11px] font-extrabold tracking-[0.14em] text-muted-foreground">
-              {group.identity_name.toUpperCase()}
-            </p>
+            <IdentityLabel identityId={group.identity_id}>{group.identity_name.toUpperCase()}</IdentityLabel>
             {goalsOf(group.commitments).map((goal) => (
               <div key={goal.name} className="mt-4">
-                <p
-                  className={cn(
-                    'text-[15px] font-extrabold',
-                    closed && 'text-primary line-through decoration-primary/70',
-                  )}
-                >
-                  {goal.name}
-                </p>
+                <p className={cn('text-[15px] font-extrabold', closed && 'text-foreground/75')}>{goal.name}</p>
                 <ul className="mt-1">
                   {goal.items.map((commitment) => {
                     const settled = commitment.status !== 'open'
@@ -174,14 +181,15 @@ export function Today() {
                       <li
                         key={commitment.id}
                         className={cn(
-                          'flex items-center gap-1 border-b border-white/8',
+                          'flex items-center gap-1 rounded-xl border-b border-white/8',
                           closed && 'border-white/5',
+                          lit === commitment.id && 'row-glow',
                         )}
                       >
                         <button
                           type="button"
                           disabled={closed || pending}
-                          onClick={() => void toggle(commitment.id)}
+                          onClick={() => void onToggle(commitment.id)}
                           className={cn(
                             'flex min-w-0 flex-1 items-center gap-4 py-4 text-left',
                             closed && 'cursor-default',
@@ -189,9 +197,10 @@ export function Today() {
                         >
                           <span
                             className={cn(
-                              'size-7 shrink-0 rounded-full border-2 transition',
+                              'size-7 shrink-0 rounded-full border-2',
                               closed || settled ? 'border-primary bg-primary' : 'border-white/25',
-                              closed && 'opacity-50',
+                              closed && 'opacity-80',
+                              lit === commitment.id && 'check-in',
                             )}
                           />
                           <span className="min-w-0">
@@ -202,7 +211,7 @@ export function Today() {
                               className={cn(
                                 'text-[16px] font-semibold',
                                 closed
-                                  ? 'text-primary line-through decoration-primary/80'
+                                  ? 'text-foreground/75'
                                   : commitment.status === 'skipped'
                                     ? 'text-white/35'
                                     : undefined,
@@ -263,22 +272,24 @@ export function Today() {
                 <p className="mt-3 text-[18px] font-semibold text-muted-foreground">Nothing was lost.</p>
               </div>
             ) : null}
-            <h1 className="text-[42px] leading-none font-extrabold tracking-tight">Day {moment.day}</h1>
-            <p className="mt-2 text-sm font-semibold text-muted-foreground">
-              {record.promises_kept}{' '}
-              {record.promises_kept === 1
-                ? 'day you kept a promise to yourself'
-                : 'days you kept promises to yourself'}
-            </p>
-            <p className="mt-6 text-[18px] font-semibold">{record.statement}</p>
-            <p className="mt-8 text-[22px] font-extrabold">{moment.phase}</p>
-            <p className="mt-1 text-sm text-muted-foreground">About {moment.length} days</p>
-            <div className="mt-3 h-1 overflow-hidden rounded-full bg-empty">
-              <div
-                className="h-full rounded-full bg-primary"
-                style={{ width: `${Math.min(100, (moment.day / moment.length) * 100)}%` }}
-              />
-            </div>
+            <WarmGlow>
+              <h1 className="text-[42px] leading-none font-extrabold tracking-tight">Day {moment.day}</h1>
+              <p className="mt-2 text-sm font-semibold text-muted-foreground">
+                {record.promises_kept}{' '}
+                {record.promises_kept === 1
+                  ? 'day you kept a promise to yourself'
+                  : 'days you kept promises to yourself'}
+              </p>
+              <p className="mt-6 text-[18px] font-semibold">{record.statement}</p>
+              <p className="mt-8 text-[22px] font-extrabold">{moment.phase}</p>
+              <p className="mt-1 text-sm text-muted-foreground">About {moment.length} days</p>
+              <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-empty">
+                <div
+                  className="progress-fill h-full rounded-full bg-primary"
+                  style={{ width: `${Math.min(100, (moment.day / moment.length) * 100)}%` }}
+                />
+              </div>
+            </WarmGlow>
           </>
         )
       ) : null}
@@ -303,7 +314,11 @@ export function Today() {
                   onClick={() => openDays(fromUpcoming(item))}
                 >
                   <span className="block text-[11px] font-extrabold tracking-[0.12em] text-muted-foreground">
-                    {item.identity_name.toUpperCase()} · {item.cadence.toUpperCase()}
+                    <span style={{ color: identityTint(record.selections.find((selection) => selection.identity_name === item.identity_name)?.identity_id ?? '') }}>
+                      {item.identity_name.toUpperCase()}
+                    </span>
+                    {' · '}
+                    {item.cadence.toUpperCase()}
                   </span>
                   <span className="mt-1 block text-[15px] font-semibold">{item.title}</span>
                   <span className="mt-1 block text-sm text-muted-foreground">
@@ -317,7 +332,7 @@ export function Today() {
       ) : null}
 
       {error ? (
-        <p className="mt-4 text-sm font-semibold text-primary" role="alert">
+        <p className="mt-4 text-sm font-semibold text-destructive" role="alert">
           {error}
         </p>
       ) : null}
@@ -329,10 +344,8 @@ export function Today() {
             disabled={!ready || pending}
             onClick={() => void onShowUp()}
             className={cn(
-              'w-full max-w-md rounded-2xl px-5 py-4 text-base font-extrabold tracking-wide',
-              ready
-                ? 'bg-primary text-primary-foreground shadow-[0_8px_24px_-10px_rgba(255,137,6,0.55)]'
-                : 'bg-secondary text-muted-foreground',
+              'w-full max-w-md rounded-2xl px-5 py-4 text-base font-extrabold tracking-wide transition-transform active:scale-[0.97]',
+              ready ? 'ready-glow bg-primary text-primary-foreground' : 'bg-secondary text-muted-foreground',
             )}
           >
             I SHOWED UP

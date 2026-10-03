@@ -117,7 +117,7 @@ export function CredentialScreen({
           {passwordHint ? <p className="text-xs text-muted-foreground">{passwordHint}</p> : null}
         </div>
         {message ? (
-          <p className="text-sm font-semibold text-primary" role="alert">
+          <p className="text-sm font-semibold text-destructive" role="alert">
             {message}
           </p>
         ) : null}

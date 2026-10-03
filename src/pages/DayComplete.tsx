@@ -1,7 +1,7 @@
 import { Navigate, useNavigate } from 'react-router'
 
 import { TomorrowList } from '../components/TomorrowList'
-import { PrimaryButton, Screen } from '../components/look'
+import { PrimaryButton, Screen, WarmGlow } from '../components/look'
 import { continueBecoming, shiftsFor, useRecord, type PhaseShift } from '../data/record'
 
 export function DayComplete() {
@@ -18,6 +18,10 @@ export function DayComplete() {
 
   return (
     <Screen className="min-h-svh max-w-lg!">
+      <WarmGlow>
+        <div className="block-fill size-14 rounded-lg bg-empty" aria-hidden />
+      </WarmGlow>
+      <div className="copy-after mt-8">
       {shifts.length > 0 ? (
         <div className="flex flex-col gap-12">
           {shifts.map((shift) => (
@@ -44,6 +48,7 @@ export function DayComplete() {
       >
         Done for today
       </PrimaryButton>
+      </div>
     </Screen>
   )
 }

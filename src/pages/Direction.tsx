@@ -2,7 +2,8 @@ import { useEffect } from 'react'
 import { useNavigate, Navigate } from 'react-router'
 
 import { markOnboarding } from '../api/admin'
-import { cn } from 'cn'
+import { IdentityLabel } from '../components/identityTint'
+import { identityTint } from '../components/tints'
 import { PrimaryButton, Screen } from '../components/look'
 import { useRecord } from '../data/record'
 
@@ -30,9 +31,7 @@ export function Direction() {
       <div className="mt-10 flex flex-col gap-10">
         {identities.map((identity) => (
           <section key={identity.id}>
-            <p className="text-[11px] font-extrabold tracking-[0.14em] text-muted-foreground">
-              {identity.name.toUpperCase()}
-            </p>
+            <IdentityLabel identityId={identity.id}>{identity.name.toUpperCase()}</IdentityLabel>
             <div className="mt-3 flex flex-col">
               {identity.directions.map((direction) => {
                 const selected = chosen[identity.id] === direction.id
@@ -42,10 +41,8 @@ export function Direction() {
                     type="button"
                     aria-pressed={selected}
                     onClick={() => chooseDirection(identity.id, direction.id)}
-                    className={cn(
-                      'border-b border-white/8 py-4 text-left text-[17px] font-semibold',
-                      selected && 'text-primary',
-                    )}
+                    className="border-b border-white/8 py-4 text-left text-[17px] font-semibold"
+                    style={selected ? { color: identityTint(identity.id) } : undefined}
                   >
                     {direction.name}
                   </button>

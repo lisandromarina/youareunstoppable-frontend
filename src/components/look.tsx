@@ -4,6 +4,24 @@ import { cn } from 'cn'
 
 import { Button } from './ui/button'
 
+export function WarmGlow({
+  children,
+  className,
+}: {
+  children: ReactNode
+  className?: string
+}) {
+  return (
+    <div className={cn('relative', className)}>
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -top-12 left-0 h-52 w-80 bg-[radial-gradient(ellipse_at_center,rgba(255,137,6,0.18),transparent_65%)]"
+      />
+      <div className="relative">{children}</div>
+    </div>
+  )
+}
+
 export function Screen({
   children,
   className,
