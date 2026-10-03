@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router'
 
 import { markOnboarding } from '../api/admin'
 import { cn } from 'cn'
+import { identityTint } from '../components/tints'
 import { PrimaryButton, Screen } from '../components/look'
 import { useRecord } from '../data/record'
 
@@ -45,12 +46,19 @@ export function Identity() {
               onClick={() => toggleIdentity(identity.id)}
               className="flex items-center justify-between border-b border-white/8 py-4 text-left"
             >
-              <span className="text-[17px] font-semibold">{identity.name}</span>
               <span
-                className={cn(
-                  'size-5 rounded-full border-2',
-                  selected ? 'border-primary bg-primary' : 'border-white/20',
-                )}
+                className="text-[17px] font-semibold"
+                style={selected ? { color: identityTint(identity.id) } : undefined}
+              >
+                {identity.name}
+              </span>
+              <span
+                className={cn('size-5 rounded-full border-2', !selected && 'border-white/20')}
+                style={
+                  selected
+                    ? { backgroundColor: identityTint(identity.id), borderColor: identityTint(identity.id) }
+                    : undefined
+                }
               />
             </button>
           )

@@ -81,7 +81,7 @@ export function Profile() {
 
       <div className="mt-16">
         {resetError ? (
-          <p className="mb-3 text-sm font-semibold text-primary" role="alert">
+          <p className="mb-3 text-sm font-semibold text-destructive" role="alert">
             {resetError}
           </p>
         ) : null}
@@ -125,7 +125,7 @@ function SignOut() {
   return (
     <div className="mt-4">
       {error ? (
-        <p className="mb-2 text-sm font-semibold text-primary" role="alert">
+        <p className="mb-2 text-sm font-semibold text-destructive" role="alert">
           {error}
         </p>
       ) : null}

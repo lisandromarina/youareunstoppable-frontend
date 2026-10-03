@@ -106,7 +106,7 @@ export function GoogleButton({ disabled = false, label, text, onCredential }: Go
   }, [clientId, text])
 
   if (!clientId) return null
-  if (failed) return <p className="text-sm font-semibold text-primary">Google sign-in could not be loaded.</p>
+  if (failed) return <p className="text-sm font-semibold text-destructive">Google sign-in could not be loaded.</p>
 
   return (
     <div className={cn('group relative w-full active:scale-[0.97]', disabled && 'pointer-events-none opacity-50')}>
