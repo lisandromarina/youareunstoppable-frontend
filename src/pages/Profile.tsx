@@ -3,6 +3,7 @@ import { Navigate, useNavigate } from 'react-router'
 
 import { errorMessage } from '../api/client'
 import { PremiumSoon } from '../components/PremiumSoon'
+import { ReleaseNote } from '../components/ReleaseNote'
 import { Sheet, SheetChoice } from '../components/Sheet'
 import { GhostButton, Screen } from '../components/look'
 import { useRecord } from '../data/record'
@@ -95,6 +96,7 @@ export function Profile() {
       </div>
 
       <PremiumSoon />
+      <ReleaseNote className="mt-10" />
 
       <Sheet
         open={confirmReset}
