@@ -7,6 +7,7 @@ export type Subscription = {
   plan: Plan
   subscription_status: string | null
   current_period_end: string | null
+  cancel_at_period_end: boolean
   deleted_at: string | null
   deleted_reason: string | null
 }
