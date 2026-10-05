@@ -3,7 +3,17 @@
   "rewrites": [
     {
       "source": "/api/:path*",
+      "has": [{ "type": "host", "value": "unstoppablepaths.com" }],
       "destination": "https://youareunstoppable-backend.vercel.app/api/:path*"
+    },
+    {
+      "source": "/api/:path*",
+      "has": [{ "type": "host", "value": "youareunstoppable-frontend.vercel.app" }],
+      "destination": "https://youareunstoppable-backend.vercel.app/api/:path*"
+    },
+    {
+      "source": "/api/:path*",
+      "destination": "https://dev-youareunstoppable-backend.vercel.app/api/:path*"
     },
     {
       "source": "/(.*)",
