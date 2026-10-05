@@ -59,7 +59,7 @@ export function Invite() {
 
       <div className="mt-20 mb-6 border-t border-white/8 pt-12 md:mt-28">
         <h2 className="max-w-md text-[32px] leading-[1.1] font-extrabold tracking-tight md:text-[40px]">
-          The person you want to become is built today.
+          IMA GATO.
         </h2>
         <PrimaryButton className="mt-8" asChild>
           <Link to="/register">Begin</Link>
