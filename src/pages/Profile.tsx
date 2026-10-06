@@ -1,13 +1,14 @@
-import { useState } from 'react'
-import { Navigate, useNavigate } from 'react-router'
+import { useEffect, useState } from 'react'
+import { Navigate, useNavigate, useSearchParams } from 'react-router'
 
+import { billingStatus, startCheckout, startPortal } from '../api/billing'
 import { errorMessage } from '../api/client'
-import { PremiumSoon } from '../components/PremiumSoon'
 import { ReleaseNote } from '../components/ReleaseNote'
 import { Sheet, SheetChoice } from '../components/Sheet'
 import { GhostButton, Screen } from '../components/look'
 import { useRecord } from '../data/record'
 import { useSession } from '../session/store'
+import type { Subscription } from '../session/types'
 
 export function Profile() {
   const navigate = useNavigate()
@@ -67,7 +68,7 @@ export function Profile() {
 
       <div className="mt-12 border-t border-white/8 pt-8">
         <p className="text-sm text-muted-foreground">{user.email}</p>
-        <p className="mt-1 text-sm font-semibold">{user.subscription.plan === 'pro' ? 'Pro' : 'Free'}</p>
+        <Billing subscription={user.subscription} />
         {user.role === 'admin' ? (
           <button
             type="button"
@@ -95,7 +96,6 @@ export function Profile() {
         </button>
       </div>
 
-      <PremiumSoon />
       <ReleaseNote className="mt-10" />
 
       <Sheet
@@ -116,6 +116,118 @@ export function Profile() {
         <SheetChoice label="Keep going" onClick={() => setConfirmReset(false)} />
       </Sheet>
     </Screen>
+  )
+}
+
+function planLabel(subscription: Subscription): string {
+  if (subscription.plan !== 'pro') return 'Free'
+  if (subscription.cancel_at_period_end && subscription.current_period_end) {
+    const end = new Date(subscription.current_period_end)
+    const date = end.toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })
+    return `Pro until ${date}`
+  }
+  return 'Pro'
+}
+
+function Billing({ subscription }: { subscription: Subscription }) {
+  const refreshUser = useSession((state) => state.refreshUser)
+  const [billingEnabled, setBillingEnabled] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+    void billingStatus()
+      .then((status) => {
+        if (!cancelled) setBillingEnabled(status.enabled)
+      })
+      .catch(() => {
+        if (!cancelled) setBillingEnabled(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+  const [searchParams, setSearchParams] = useSearchParams()
+  const checkoutSuccess = searchParams.get('checkout') === 'success'
+  const [pending, setPending] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [notice, setNotice] = useState<string | null>(null)
+  const pro = subscription.plan === 'pro'
+
+  useEffect(() => {
+    if (!checkoutSuccess) return
+    let cancelled = false
+
+    async function confirm() {
+      for (let attempt = 0; attempt < 5; attempt += 1) {
+        try {
+          const next = await refreshUser()
+          if (cancelled) return
+          if (next.subscription.plan === 'pro') {
+            setNotice(null)
+            setSearchParams({}, { replace: true })
+            return
+          }
+        } catch (caught: unknown) {
+          if (cancelled) return
+          setError(errorMessage(caught))
+          setSearchParams({}, { replace: true })
+          return
+        }
+        await new Promise((resolve) => setTimeout(resolve, 1000))
+      }
+      if (cancelled) return
+      setNotice('Your plan will appear once Stripe confirms it.')
+      setSearchParams({}, { replace: true })
+    }
+
+    void confirm()
+    return () => {
+      cancelled = true
+    }
+  }, [checkoutSuccess, refreshUser, setSearchParams])
+
+  const action = pending ? 'Opening…' : pro ? 'Manage billing' : 'Monthly Pro'
+
+  function openBilling() {
+    setError(null)
+    setPending(true)
+    const start = pro ? startPortal : startCheckout
+    void start()
+      .then(({ url }) => {
+        window.location.assign(url)
+      })
+      .catch((caught: unknown) => {
+        setError(errorMessage(caught))
+        setPending(false)
+      })
+  }
+
+  return (
+    <div className="mt-1">
+      <p className="text-sm font-semibold">{planLabel(subscription)}</p>
+      {subscription.subscription_status === 'past_due' ? (
+        <p className="mt-1 text-sm text-muted-foreground">Payment needs an update.</p>
+      ) : null}
+      {checkoutSuccess && !notice ? (
+        <p className="mt-1 text-sm text-muted-foreground">Confirming your subscription…</p>
+      ) : null}
+      {notice ? <p className="mt-1 text-sm text-muted-foreground">{notice}</p> : null}
+      {error ? (
+        <p className="mt-2 text-sm font-semibold text-destructive" role="alert">
+          {error}
+        </p>
+      ) : null}
+      {billingEnabled ? (
+        <button
+          type="button"
+          className="mt-3 text-sm font-bold text-primary disabled:opacity-60"
+          disabled={pending}
+          onClick={openBilling}
+        >
+          {action}
+        </button>
+      ) : null}
+    </div>
   )
 }
 

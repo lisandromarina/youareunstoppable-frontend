@@ -14,6 +14,7 @@ type SessionState = {
   signInWithGoogle: (idToken: string) => Promise<void>
   setPassword: (password: string) => Promise<void>
   logout: () => Promise<void>
+  refreshUser: () => Promise<User>
   clearClosedMessage: () => void
 }
 
@@ -72,6 +73,12 @@ export const useSession = create<SessionState>((set) => ({
     await api<void>('/api/auth/logout', { method: 'POST' })
     useRecord.getState().forget()
     set({ status: 'anonymous', user: null, closedMessage: null })
+  },
+
+  refreshUser: async () => {
+    const user = await api<User>('/api/me')
+    set({ status: 'authenticated', user, closedMessage: null })
+    return user
   },
 
   clearClosedMessage: () => set({ closedMessage: null }),
