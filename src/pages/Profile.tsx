@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Navigate, useNavigate, useSearchParams } from 'react-router'
 
-import { startCheckout, startPortal } from '../api/billing'
+import { billingStatus, startCheckout, startPortal } from '../api/billing'
 import { errorMessage } from '../api/client'
 import { ReleaseNote } from '../components/ReleaseNote'
 import { Sheet, SheetChoice } from '../components/Sheet'
@@ -131,6 +131,21 @@ function planLabel(subscription: Subscription): string {
 
 function Billing({ subscription }: { subscription: Subscription }) {
   const refreshUser = useSession((state) => state.refreshUser)
+  const [billingEnabled, setBillingEnabled] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+    void billingStatus()
+      .then((status) => {
+        if (!cancelled) setBillingEnabled(status.enabled)
+      })
+      .catch(() => {
+        if (!cancelled) setBillingEnabled(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
   const [searchParams, setSearchParams] = useSearchParams()
   const checkoutSuccess = searchParams.get('checkout') === 'success'
   const [pending, setPending] = useState(false)
@@ -202,14 +217,16 @@ function Billing({ subscription }: { subscription: Subscription }) {
           {error}
         </p>
       ) : null}
-      <button
-        type="button"
-        className="mt-3 text-sm font-bold text-primary disabled:opacity-60"
-        disabled={pending}
-        onClick={openBilling}
-      >
-        {action}
-      </button>
+      {billingEnabled ? (
+        <button
+          type="button"
+          className="mt-3 text-sm font-bold text-primary disabled:opacity-60"
+          disabled={pending}
+          onClick={openBilling}
+        >
+          {action}
+        </button>
+      ) : null}
     </div>
   )
 }
