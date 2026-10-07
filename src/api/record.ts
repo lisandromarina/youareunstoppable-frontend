@@ -135,6 +135,7 @@ export type Transformation = {
   }
   year: YearDay[]
   promises_kept: number
+  started_on: string
   tomorrow?: TomorrowItem[]
   prior_closed_on?: string | null
 }
@@ -204,10 +205,6 @@ export function skipCommitment(id: string): Promise<Transformation> {
   return api<Transformation>(withOn(`/api/transformation/today/commitments/${id}/skip`), {
     method: 'POST',
   })
-}
-
-export function showedUp(): Promise<Transformation> {
-  return api<Transformation>(withOn('/api/transformation/today/showed-up'), { method: 'POST' })
 }
 
 export function scheduleCommitment(
