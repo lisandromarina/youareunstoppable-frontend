@@ -1,14 +1,12 @@
 import { useState } from 'react'
-import { Navigate, useNavigate } from 'react-router'
+import { Navigate } from 'react-router'
 import { cn } from 'cn'
-import type { Commitment, Upcoming } from '../api/record'
-import { IdentityLabel } from '../components/identityTint'
+import type { Commitment, Selection, Upcoming } from '../api/record'
 import { identityTint } from '../components/tints'
-import { PremiumSoon } from '../components/PremiumSoon'
 import { Sheet, SheetChoice } from '../components/Sheet'
 import { TomorrowList } from '../components/TomorrowList'
-import { Screen, WarmGlow } from '../components/look'
-import { continueBecoming, isAway, phaseMoment, useRecord } from '../data/record'
+import { Screen } from '../components/look'
+import { phaseMoment, useRecord } from '../data/record'
 
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 
@@ -26,19 +24,6 @@ type SheetState =
   | { kind: 'days'; target: Schedulable }
   | null
 
-function goalsOf(commitments: Commitment[]) {
-  const names: string[] = []
-  const grouped = new Map<string, Commitment[]>()
-  for (const item of commitments) {
-    if (!grouped.has(item.objective)) {
-      names.push(item.objective)
-      grouped.set(item.objective, [])
-    }
-    grouped.get(item.objective)?.push(item)
-  }
-  return names.map((name) => ({ name, items: grouped.get(name) ?? [] }))
-}
-
 function fromCommitment(commitment: Commitment): Schedulable {
   return {
     planned_commitment_id: commitment.planned_commitment_id,
@@ -48,6 +33,27 @@ function fromCommitment(commitment: Commitment): Schedulable {
     weekdays: commitment.weekdays,
     month_day: commitment.month_day,
   }
+}
+
+function mobileLede(identities: number) {
+  if (identities > 1) return 'Keep one promise under each identity and both days count.'
+  return 'Keep one promise and the day counts.'
+}
+
+function desktopLede(kept: number, total: number, closed: boolean) {
+  if (closed) return 'You showed up today.'
+  if (total === 0) return 'Nothing is due today.'
+  if (kept >= total) return total === 1 ? 'You kept today’s promise.' : 'You kept today’s promises.'
+  const noun = total === 1 ? 'promise' : 'promises'
+  return `${kept} of ${total} ${noun} kept. The rest can wait.`
+}
+
+function writtenDay(iso: string) {
+  const [year, month, day] = iso.split('-').map(Number)
+  const date = new Date(year, (month ?? 1) - 1, day ?? 1)
+  const weekday = date.toLocaleDateString('en-US', { weekday: 'long' })
+  const monthName = date.toLocaleDateString('en-US', { month: 'short' })
+  return `${weekday}, ${monthName} ${date.getDate()}`
 }
 
 function fromUpcoming(item: Upcoming): Schedulable {
@@ -62,7 +68,6 @@ function fromUpcoming(item: Upcoming): Schedulable {
 }
 
 export function Today() {
-  const navigate = useNavigate()
   const status = useRecord((state) => state.status)
   const record = useRecord((state) => state.record)
   const pending = useRecord((state) => state.pending)
@@ -71,9 +76,7 @@ export function Today() {
   const replace = useRecord((state) => state.replace)
   const skip = useRecord((state) => state.skip)
   const schedule = useRecord((state) => state.schedule)
-  const showUp = useRecord((state) => state.showUp)
   const [sheet, setSheet] = useState<SheetState>(null)
-  const [showDone, setShowDone] = useState(false)
   const [days, setDays] = useState<number[]>([])
   const [monthDay, setMonthDay] = useState(1)
   const [lit, setLit] = useState<string | null>(null)
@@ -81,10 +84,7 @@ export function Today() {
   if (status === 'empty') return <Navigate to="/begin" replace />
   if (!record) return null
 
-  const primary = record.selections[0]
-  const moment = primary ? phaseMoment(primary, record.today.closed) : null
   const commitments = record.today.groups.flatMap((group) => group.commitments)
-  const ready = commitments.every((item) => item.status !== 'open')
   const closed = record.today.closed
   const dayTarget = sheet?.kind === 'days' ? sheet.target : null
   const needed =
@@ -118,15 +118,6 @@ export function Today() {
     if (before?.status === 'open' && after?.status === 'done') {
       setLit(null)
       requestAnimationFrame(() => setLit(id))
-    }
-  }
-
-  async function onShowUp() {
-    try {
-      await showUp()
-      navigate('/day-complete')
-    } catch {
-      setSheet(null)
     }
   }
 
@@ -164,194 +155,88 @@ export function Today() {
     }
   }
 
-  const activities = (
-    <div className={cn('flex flex-col gap-8 text-left', closed ? 'max-h-[60vh] overflow-y-auto' : 'mt-10')}>
-      {record.today.groups
-        .filter((group) => group.commitments.length > 0)
-        .map((group) => (
-          <section key={group.identity_id}>
-            <IdentityLabel identityId={group.identity_id}>{group.identity_name.toUpperCase()}</IdentityLabel>
-            {goalsOf(group.commitments).map((goal) => (
-              <div key={goal.name} className="mt-4">
-                <p className={cn('text-[15px] font-extrabold', closed && 'text-foreground/75')}>{goal.name}</p>
-                <ul className="mt-1">
-                  {goal.items.map((commitment) => {
-                    const settled = commitment.status !== 'open'
-                    return (
-                      <li
-                        key={commitment.id}
-                        className={cn(
-                          'flex items-center gap-1 rounded-xl border-b border-white/8',
-                          closed && 'border-white/5',
-                          lit === commitment.id && 'row-glow',
-                        )}
-                      >
-                        <button
-                          type="button"
-                          disabled={closed || pending}
-                          onClick={() => void onToggle(commitment.id)}
-                          className={cn(
-                            'flex min-w-0 flex-1 items-center gap-4 py-4 text-left',
-                            closed && 'cursor-default',
-                          )}
-                        >
-                          <span
-                            className={cn(
-                              'size-7 shrink-0 rounded-full border-2',
-                              closed || settled ? 'border-primary bg-primary' : 'border-white/25',
-                              closed && 'opacity-80',
-                              lit === commitment.id && 'check-in',
-                            )}
-                          />
-                          <span className="min-w-0">
-                            <span className="block text-[11px] font-extrabold tracking-[0.12em] text-muted-foreground">
-                              {commitment.cadence.toUpperCase()}
-                            </span>
-                            <span
-                              className={cn(
-                                'text-[16px] font-semibold',
-                                closed
-                                  ? 'text-foreground/75'
-                                  : commitment.status === 'skipped'
-                                    ? 'text-white/35'
-                                    : undefined,
-                              )}
-                            >
-                              {commitment.implementation.title}
-                            </span>
-                          </span>
-                        </button>
-                        {closed ? null : (
-                          <button
-                            type="button"
-                            aria-label={`Actions for ${commitment.implementation.title}`}
-                            className="px-2 py-4 text-lg tracking-widest text-muted-foreground"
-                            onClick={() => setSheet({ kind: 'menu', commitment })}
-                          >
-                            ···
-                          </button>
-                        )}
-                      </li>
-                    )
-                  })}
-                </ul>
-              </div>
-            ))}
-          </section>
-        ))}
-    </div>
-  )
+  const kept = commitments.filter((item) => item.status === 'done').length
+  const columns = record.selections
+    .map((selection) => ({
+      selection,
+      commitments: record.today.groups.find((group) => group.identity_id === selection.identity_id)?.commitments ?? [],
+    }))
+    .filter((column) => column.commitments.length > 0)
 
   return (
-    <Screen
-      className={cn('max-w-lg!', closed ? 'flex-1 items-center justify-center text-center' : 'pb-40 md:pb-16')}
-    >
-      {moment ? (
-        closed ? (
-          <div className="flex w-full max-w-sm flex-col items-center">
-            <h1 className="text-[40px] leading-[1.05] font-extrabold tracking-tight">
-              Today, you are the person you want to become.
-            </h1>
-            <p className="mt-4 text-[16px] leading-relaxed text-muted-foreground">
-              {continueBecoming(record.statement)}
-            </p>
-            <TomorrowList items={record.tomorrow} showIdentity={record.selections.length > 1} />
-            <button
-              type="button"
-              className="mt-10 text-[15px] font-semibold text-primary"
-              onClick={() => setShowDone(true)}
-            >
-              See today's activities
-            </button>
-          </div>
-        ) : (
-          <>
-            {isAway(record) ? (
-              <div className="mb-10">
-                <p className="text-[42px] leading-none font-extrabold tracking-tight">You're back.</p>
-                <p className="mt-3 text-[18px] font-semibold text-muted-foreground">Nothing was lost.</p>
-              </div>
-            ) : null}
-            <WarmGlow>
-              <h1 className="text-[42px] leading-none font-extrabold tracking-tight">Day {moment.day}</h1>
-              <p className="mt-2 text-sm font-semibold text-muted-foreground">
-                {record.promises_kept}{' '}
-                {record.promises_kept === 1
-                  ? 'day you kept a promise to yourself'
-                  : 'days you kept promises to yourself'}
-              </p>
-              <p className="mt-6 text-[18px] font-semibold">{record.statement}</p>
-              <p className="mt-8 text-[22px] font-extrabold">{moment.phase}</p>
-              <p className="mt-1 text-sm text-muted-foreground">About {moment.length} days</p>
-              <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-empty">
-                <div
-                  className="progress-fill h-full rounded-full bg-primary"
-                  style={{ width: `${Math.min(100, (moment.day / moment.length) * 100)}%` }}
-                />
-              </div>
-            </WarmGlow>
-          </>
-        )
-      ) : null}
+    <Screen className="max-w-lg! pb-28 lg:max-w-6xl! lg:px-10 lg:pt-10 lg:pb-12">
+      <p className="text-[15px] font-semibold text-primary">{writtenDay(record.today.date)}</p>
+      <h1 className="mt-2 text-[3.15rem] leading-none font-extrabold tracking-tight lg:text-[3.35rem]">
+        <span className="lg:hidden">Today.</span>
+        <span className="hidden lg:inline">One day is yours.</span>
+      </h1>
+      <p className="mt-3 max-w-sm text-[17px] leading-snug text-foreground/80 lg:hidden">
+        {mobileLede(record.selections.length)}
+      </p>
+      <p className="mt-3 hidden text-[18px] text-foreground/80 lg:block">
+        {desktopLede(kept, commitments.length, closed)}
+      </p>
 
-      {closed ? (
-        <Sheet open={showDone} title="Today's activities" onClose={() => setShowDone(false)}>
-          {activities}
-        </Sheet>
-      ) : (
-        activities
-      )}
+      <div className="mt-8 grid gap-8 lg:grid-cols-2 lg:gap-x-10">
+        {columns.map((column) => (
+          <IdentityColumn
+            key={column.selection.identity_id}
+            selection={column.selection}
+            commitments={column.commitments}
+            closed={closed}
+            pending={pending}
+            lit={lit}
+            onToggle={(id) => void onToggle(id)}
+            onMenu={(commitment) => setSheet({ kind: 'menu', commitment })}
+          />
+        ))}
+      </div>
+
+      <p className="mt-10 hidden max-w-xl text-[14px] text-muted-foreground lg:block">
+        {record.selections.length > 1
+          ? 'Each identity counts on its own. Keep one promise under it and that day is yours.'
+          : 'Keep one promise and the day is yours.'}
+      </p>
 
       {record.today.coming_up?.length > 0 && !closed ? (
-        <section className="mt-10">
-          <p className="text-[11px] font-extrabold tracking-[0.14em] text-muted-foreground">Coming up</p>
-          <ul className="mt-2">
-            {record.today.coming_up.map((item) => (
-              <li key={item.planned_commitment_id} className="border-b border-white/8">
-                <button
-                  type="button"
-                  className="w-full py-3 text-left"
-                  onClick={() => openDays(fromUpcoming(item))}
-                >
-                  <span className="block text-[11px] font-extrabold tracking-[0.12em] text-muted-foreground">
-                    <span style={{ color: identityTint(record.selections.find((selection) => selection.identity_name === item.identity_name)?.identity_id ?? '') }}>
-                      {item.identity_name.toUpperCase()}
-                    </span>
-                    {' · '}
-                    {item.cadence.toUpperCase()}
-                  </span>
-                  <span className="mt-1 block text-[15px] font-semibold">{item.title}</span>
-                  <span className="mt-1 block text-sm text-muted-foreground">
-                    {item.objective} · {item.when}
-                  </span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        </section>
-      ) : null}
+            <section className="mt-8">
+              <p className="text-[11px] font-extrabold tracking-[0.14em] text-muted-foreground">COMING UP</p>
+              <ul className="mt-2">
+                {record.today.coming_up.map((item) => (
+                  <li key={item.planned_commitment_id} className="border-b border-white/8">
+                    <button type="button" className="w-full py-3 text-left" onClick={() => openDays(fromUpcoming(item))}>
+                      <span className="block text-[11px] font-extrabold tracking-[0.12em] text-muted-foreground">
+                        <span
+                          style={{
+                            color: identityTint(
+                              record.selections.find((selection) => selection.identity_name === item.identity_name)
+                                ?.identity_id ?? '',
+                            ),
+                          }}
+                        >
+                          {item.identity_name.toUpperCase()}
+                        </span>
+                        {' · '}
+                        {item.cadence.toUpperCase()}
+                      </span>
+                      <span className="mt-1 block text-[15px] font-semibold">{item.title}</span>
+                      <span className="mt-1 block text-sm text-muted-foreground">
+                        {item.objective} · {item.when}
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ) : null}
 
-      {error ? (
-        <p className="mt-4 text-sm font-semibold text-destructive" role="alert">
-          {error}
-        </p>
-      ) : null}
+          {error ? (
+            <p className="mt-4 text-sm font-semibold text-destructive" role="alert">
+              {error}
+            </p>
+          ) : null}
 
-      {closed ? null : (
-        <div className="fixed inset-x-0 bottom-[calc(4.6rem+env(safe-area-inset-bottom))] z-30 px-6 md:static md:bottom-auto md:mt-10 md:px-0">
-          <button
-            type="button"
-            disabled={!ready || pending}
-            onClick={() => void onShowUp()}
-            className={cn(
-              'w-full max-w-md rounded-2xl px-5 py-4 text-base font-extrabold tracking-wide transition-transform active:scale-[0.97]',
-              ready ? 'ready-glow bg-primary text-primary-foreground' : 'bg-secondary text-muted-foreground',
-            )}
-          >
-            I SHOWED UP
-          </button>
-        </div>
-      )}
+      {closed ? <TomorrowList items={record.tomorrow} showIdentity={record.selections.length > 1} /> : null}
 
       <Sheet open={sheet?.kind === 'menu'} title="Today" onClose={() => setSheet(null)}>
         <SheetChoice
@@ -450,7 +335,147 @@ export function Today() {
           Save days
         </button>
       </Sheet>
-      <PremiumSoon />
     </Screen>
+  )
+}
+
+function PromiseRow({
+  commitment,
+  closed,
+  pending,
+  lit,
+  onToggle,
+  onMenu,
+}: {
+  commitment: Commitment
+  closed: boolean
+  pending: boolean
+  lit: boolean
+  onToggle: () => void
+  onMenu: () => void
+}) {
+  const done = commitment.status === 'done'
+  const skipped = commitment.status === 'skipped'
+  return (
+    <div
+      className={cn(
+        'flex items-center gap-2 rounded-[1.25rem] border-2 bg-card px-4 py-4',
+        done ? 'border-primary' : 'border-white/10',
+        lit && 'row-glow',
+      )}
+    >
+      <button
+        type="button"
+        disabled={closed || pending}
+        onClick={onToggle}
+        className={cn('flex min-w-0 flex-1 items-center gap-3 text-left', closed && 'cursor-default')}
+      >
+        <span
+          className={cn(
+            'flex size-8 shrink-0 items-center justify-center rounded-full border-2',
+            done ? 'border-primary bg-primary text-primary-foreground' : 'border-white/30',
+            lit && 'check-in',
+          )}
+        >
+          {done ? <CheckIcon /> : null}
+        </span>
+        <span className="min-w-0">
+          <span
+            className={cn(
+              'block text-[11px] font-extrabold tracking-[0.14em]',
+              done ? 'text-primary' : 'text-muted-foreground',
+            )}
+          >
+            {commitment.cadence.toUpperCase()}
+            {done ? ' · KEPT' : skipped ? ' · SKIPPED' : ''}
+          </span>
+          <span className={cn('mt-1 block text-[18px] leading-snug font-extrabold', skipped && 'text-white/35')}>
+            {commitment.implementation.title}
+          </span>
+        </span>
+      </button>
+      {closed ? null : (
+        <button
+          type="button"
+          aria-label={`Actions for ${commitment.implementation.title}`}
+          className="px-2 text-lg tracking-widest text-muted-foreground"
+          onClick={onMenu}
+        >
+          ...
+        </button>
+      )}
+    </div>
+  )
+}
+
+function IdentityColumn({
+  selection,
+  commitments,
+  closed,
+  pending,
+  lit,
+  onToggle,
+  onMenu,
+}: {
+  selection: Selection
+  commitments: Commitment[]
+  closed: boolean
+  pending: boolean
+  lit: string | null
+  onToggle: (id: string) => void
+  onMenu: (commitment: Commitment) => void
+}) {
+  const moment = phaseMoment(selection, closed)
+  const kept = commitments.filter((item) => item.status === 'done').length
+  const width = moment.length === 0 ? 0 : Math.min(100, (moment.filled / moment.length) * 100)
+
+  return (
+    <section>
+      <div className="flex items-baseline justify-between gap-3">
+        <h2 className="text-[13px] font-extrabold tracking-[0.14em] text-primary">
+          {selection.identity_name.toUpperCase()}
+        </h2>
+        <p className="text-[13px] text-muted-foreground">
+          {kept} of {commitments.length} kept
+        </p>
+      </div>
+      <p className="mt-2 text-[15px] text-foreground/85">
+        {selection.direction_name} · {selection.stage_name} · Day {moment.day}
+      </p>
+      <div className="mt-3 h-1 overflow-hidden rounded-full bg-empty">
+        <div className="h-full rounded-full bg-primary" style={{ width: `${width}%` }} />
+      </div>
+      <p className="mt-2 text-[13px] text-muted-foreground">
+        {moment.filled} of {moment.length} shown-up days to move on
+      </p>
+      <div className="mt-4 flex flex-col gap-3">
+        {commitments.map((commitment) => (
+          <PromiseRow
+            key={commitment.id}
+            commitment={commitment}
+            closed={closed}
+            pending={pending}
+            lit={lit === commitment.id}
+            onToggle={() => onToggle(commitment.id)}
+            onMenu={() => onMenu(commitment)}
+          />
+        ))}
+      </div>
+    </section>
+  )
+}
+
+function CheckIcon() {
+  return (
+    <svg viewBox="0 0 16 16" className="size-3.5" aria-hidden>
+      <path
+        d="M3.2 8.3 6.3 11.2 12.8 4.6"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
   )
 }
