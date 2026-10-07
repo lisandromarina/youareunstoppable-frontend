@@ -7,7 +7,6 @@ import {
   replaceCommitment,
   resetTransformation,
   scheduleCommitment,
-  showedUp,
   skipCommitment,
   startTransformation,
   toggleCommitment,
@@ -40,11 +39,6 @@ export function continueBecoming(statement: string) {
   return `Tomorrow, you continue becoming ${rest}.`
 }
 
-export function isAway(record: Transformation) {
-  if (record.today.closed || !record.prior_closed_on) return false
-  return record.prior_closed_on < dayBefore(record.today.date)
-}
-
 export function phaseShifts(before: Transformation, after: Transformation): PhaseShift[] {
   return before.selections.flatMap((prev) => {
     if (prev.completed || prev.day_in_phase !== prev.length_days) return []
@@ -66,21 +60,8 @@ export function phaseShifts(before: Transformation, after: Transformation): Phas
   })
 }
 
-function dayBefore(iso: string) {
-  const [year, month, day] = iso.split('-').map(Number)
-  const date = new Date(year, month - 1, day)
-  date.setDate(date.getDate() - 1)
-  const nextMonth = String(date.getMonth() + 1).padStart(2, '0')
-  const nextDay = String(date.getDate()).padStart(2, '0')
-  return `${date.getFullYear()}-${nextMonth}-${nextDay}`
-}
-
 function ceremonyStorageKey(userId: string) {
   return `${ceremonyKey}:${userId}`
-}
-
-function rememberShifts(userId: string, date: string, shifts: PhaseShift[]) {
-  sessionStorage.setItem(ceremonyStorageKey(userId), JSON.stringify({ date, shifts }))
 }
 
 export function shiftsFor(userId: string | null, date: string): PhaseShift[] {
@@ -123,7 +104,6 @@ type RecordState = {
   replace: (id: string, implementationId: string) => Promise<void>
   skip: (id: string) => Promise<void>
   schedule: (id: string, body: { weekdays?: number[]; month_day?: number }) => Promise<void>
-  showUp: () => Promise<void>
   reset: () => Promise<void>
   clearCeremony: () => void
 }
@@ -379,26 +359,6 @@ export const useRecord = create<RecordState>((set, get) => ({
     try {
       const record = await scheduleCommitment(id, body)
       set({ record, pending: false })
-    } catch (caught) {
-      set({ pending: false, error: errorMessage(caught) })
-      throw caught
-    }
-  },
-
-  showUp: async () => {
-    const record = get().record
-    const accountId = get().accountId
-    if (!record) return
-    set({ pending: true, error: null })
-    try {
-      const next = await showedUp()
-      const shifts = phaseShifts(record, next)
-      if (accountId) rememberShifts(accountId, next.today.date, shifts)
-      set({
-        record: next,
-        pending: false,
-        ceremony: { shifts },
-      })
     } catch (caught) {
       set({ pending: false, error: errorMessage(caught) })
       throw caught

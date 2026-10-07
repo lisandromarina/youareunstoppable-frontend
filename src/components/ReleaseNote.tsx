@@ -16,7 +16,7 @@ export function ReleaseNote({
   variant = 'full',
 }: {
   className?: string
-  variant?: 'full' | 'landing'
+  variant?: 'full' | 'landing' | 'line'
 }) {
   const year = releaseDate.slice(0, 4)
   const release = (
@@ -24,6 +24,10 @@ export function ReleaseNote({
       Release <span className="font-semibold text-foreground/80">{version}</span>, from {writtenDate(releaseDate)}.
     </>
   )
+
+  if (variant === 'line') {
+    return <p className={cn('text-[13px] leading-relaxed text-muted-foreground', className)}>{release}</p>
+  }
 
   if (variant === 'landing') {
     return (

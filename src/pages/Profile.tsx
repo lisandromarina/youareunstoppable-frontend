@@ -79,22 +79,26 @@ export function Profile() {
         </div>
 
         <aside className="mt-7">
-          <p className="text-[11px] font-extrabold tracking-[0.14em] text-muted-foreground">
-            DEVELOPER · TEST BUILDS ONLY
-          </p>
-          {resetError ? (
-            <p className="mt-3 text-sm font-semibold text-destructive" role="alert">
-              {resetError}
-            </p>
+          {user.role === 'admin' ? (
+            <>
+              <p className="text-[11px] font-extrabold tracking-[0.14em] text-muted-foreground">
+                DEVELOPER · TEST BUILDS ONLY
+              </p>
+              {resetError ? (
+                <p className="mt-3 text-sm font-semibold text-destructive" role="alert">
+                  {resetError}
+                </p>
+              ) : null}
+              <button
+                type="button"
+                className="mt-3 w-full rounded-[1.25rem] border border-dashed border-white/25 px-4 py-4 text-[16px] font-semibold text-foreground"
+                onClick={() => setConfirmReset(true)}
+              >
+                Reset prototype
+              </button>
+            </>
           ) : null}
-          <button
-            type="button"
-            className="mt-3 w-full rounded-[1.25rem] border border-dashed border-white/25 px-4 py-4 text-[16px] font-semibold text-foreground"
-            onClick={() => setConfirmReset(true)}
-          >
-            Reset prototype
-          </button>
-          <ReleaseNote className="mt-6" />
+          <ReleaseNote className={user.role === 'admin' ? 'mt-6' : undefined} />
         </aside>
       </div>
 

@@ -11,72 +11,100 @@ export function Journey() {
   const record = useRecord((state) => state.record)
   const catalog = useRecord((state) => state.catalog)
   const [openKey, setOpenKey] = useState<string | null>(null)
+  const [identityId, setIdentityId] = useState<string | null>(null)
 
   if (status === 'empty') return <Navigate to="/begin" replace />
   if (!record) return null
 
-  const many = record.selections.length > 1
+  const selected = record.selections.find((item) => item.identity_id === identityId) ?? record.selections[0]
+  const moment = selected ? phaseMoment(selected, record.today.closed) : null
+  const found = selected ? selected.phases.findIndex((phase) => phase.status === 'current') : -1
+  const currentIndex = !selected ? 0 : found >= 0 ? found : Math.max(0, selected.phases.length - 1)
+  const stage = selected?.phases[currentIndex]
 
   return (
     <Screen className="max-w-lg! pb-28 lg:max-w-6xl! lg:px-10 lg:pt-10 lg:pb-12">
-      {many ? null : <PathEyebrow name={record.selections[0]?.identity_name ?? ''} />}
-      <h1 className="mt-3 max-w-4xl text-[2.35rem] leading-[1.05] font-extrabold tracking-tight sm:text-5xl">
-        {record.statement}
-      </h1>
+      {record.selections.length > 1 ? (
+        <div className="mb-6 flex lg:mb-8 lg:justify-center">
+          <div className="flex w-full rounded-full bg-card p-1 lg:w-auto">
+            {record.selections.map((selection) => {
+              const active = selection.identity_id === selected?.identity_id
+              return (
+                <button
+                  key={selection.identity_id}
+                  type="button"
+                  onClick={() => {
+                    setIdentityId(selection.identity_id)
+                    setOpenKey(null)
+                  }}
+                  className={cn(
+                    'flex-1 rounded-full px-5 py-2.5 text-[15px] font-semibold lg:flex-none lg:px-6 lg:py-2',
+                    active ? 'bg-primary text-[#1a1200]' : 'text-foreground/80',
+                  )}
+                >
+                  {selection.identity_name}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      ) : null}
 
-      <div className="mt-6 flex flex-col gap-10 lg:mt-8">
-        {record.selections.map((selection) => {
-          const moment = phaseMoment(selection, record.today.closed)
-          const found = selection.phases.findIndex((phase) => phase.status === 'current')
-          const currentIndex = found >= 0 ? found : Math.max(0, selection.phases.length - 1)
-          const stage = selection.phases[currentIndex]
-          return (
-            <section key={selection.identity_id}>
-              {many ? <PathEyebrow className="mb-3" name={selection.identity_name} /> : null}
-              <SummaryCard
-                phaseNumber={currentIndex + 1}
-                stage={stage?.name ?? selection.stage_name}
-                day={moment.day}
-                length={moment.length}
-                shown={moment.filled}
-                closed={record.today.closed}
-              />
-              <div
-                className={cn(
-                  'mt-4 grid gap-3',
-                  selection.phases.length >= 4 ? 'lg:grid-cols-4' : 'lg:grid-cols-3',
-                  selection.phases.length <= 2 && 'lg:grid-cols-2',
-                )}
-              >
-                {selection.phases.map((phase, index) => {
-                  const key = `${selection.identity_id}:${phase.name}`
-                  const current = phase.status === 'current'
-                  const open = openKey === null ? current : openKey === key
-                  const source = catalogPhase(catalog, selection, phase.name)
-                  return (
-                    <PhaseCard
-                      key={phase.name}
-                      phase={phase}
-                      index={index}
-                      phases={selection.phases}
-                      open={open}
-                      ask={askText(source, phase.headline)}
-                      why={whyText(source, phase.headline)}
-                      onToggle={() => setOpenKey(open ? '' : key)}
-                    />
-                  )
-                })}
-              </div>
-            </section>
-          )
-        })}
-      </div>
+      {selected ? (
+        <>
+          <PathEyebrow name={selected.identity_name} />
+          <h1 className="mt-3 max-w-4xl text-[2.35rem] leading-[1.05] font-extrabold tracking-tight sm:text-5xl">
+            {record.selections.length > 1 ? pathStatement(selected.identity_name) : record.statement}
+          </h1>
+          <p className="mt-3 text-[17px] text-foreground/70">{selected.direction_name}</p>
+          <div className="mt-6 lg:mt-8">
+            <SummaryCard
+              phaseNumber={currentIndex + 1}
+              stage={stage?.name ?? selected.stage_name}
+              day={moment?.day ?? selected.day_in_phase}
+              length={moment?.length ?? selected.length_days}
+              shown={moment?.filled ?? 0}
+              closed={record.today.closed}
+            />
+            <div
+              className={cn(
+                'mt-4 grid gap-3',
+                selected.phases.length >= 4 ? 'lg:grid-cols-4' : 'lg:grid-cols-3',
+                selected.phases.length <= 2 && 'lg:grid-cols-2',
+              )}
+            >
+              {selected.phases.map((phase, index) => {
+                const key = `${selected.identity_id}:${phase.name}`
+                const current = phase.status === 'current'
+                const open = openKey === null ? current : openKey === key
+                const source = catalogPhase(catalog, selected, phase.name)
+                return (
+                  <PhaseCard
+                    key={phase.name}
+                    phase={phase}
+                    index={index}
+                    phases={selected.phases}
+                    open={open}
+                    ask={askText(source, phase.headline)}
+                    why={whyText(source, phase.headline)}
+                    onToggle={() => setOpenKey(open ? '' : key)}
+                  />
+                )
+              })}
+            </div>
+          </div>
+        </>
+      ) : null}
 
       <p className="mt-8 text-center text-[13px] leading-relaxed text-muted-foreground lg:mt-10">
         Want a path tuned to your goals and pace? Premium is coming soon.
       </p>
     </Screen>
   )
+}
+
+function pathStatement(name: string) {
+  return `I’m becoming ${name.toLowerCase()}.`
 }
 
 function PathEyebrow({ name, className }: { name: string; className?: string }) {
