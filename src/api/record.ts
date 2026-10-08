@@ -5,7 +5,7 @@ export type CatalogImplementation = {
   title: string
 }
 
-export type Recurrence = 'daily' | 'times_per_week' | 'weekly' | 'monthly'
+export type Recurrence = 'daily' | 'times_per_week' | 'weekly' | 'monthly' | 'once'
 
 export type CatalogCommitment = {
   id: string
@@ -57,6 +57,8 @@ export type Commitment = {
   times_per_week: number | null
   weekdays: number[]
   month_day: number | null
+  due_on: string | null
+  reason: string | null
   implementation: Implementation
   implementations: Implementation[]
   status: 'open' | 'done' | 'skipped'
@@ -72,6 +74,7 @@ export type Upcoming = {
   times_per_week: number | null
   weekdays: number[]
   month_day: number | null
+  due_on: string | null
   when: string
 }
 

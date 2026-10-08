@@ -115,7 +115,7 @@ export async function api<T>(path: string, init: RequestInit = {}, allowRefresh 
 
   if (response.status === 403) {
     const message = await readError(response)
-    handlers?.onClosed(message)
+    if (!path.startsWith('/api/coach')) handlers?.onClosed(message)
     throw new ApiError(403, message)
   }
 

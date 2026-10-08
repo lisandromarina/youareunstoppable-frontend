@@ -7,6 +7,7 @@ import { RequireAuth, PublicOnly } from './components/SessionGate'
 import { useSession } from './session/store'
 import { Admin } from './pages/Admin'
 import { Begin } from './pages/Begin'
+import { Coach } from './pages/Coach'
 import { DayComplete } from './pages/DayComplete'
 import { Direction } from './pages/Direction'
 import { Identity } from './pages/Identity'
@@ -48,6 +49,7 @@ export default function App() {
               <Route path="/profile" element={<Profile />} />
             </Route>
             <Route path="/day-complete" element={<DayComplete />} />
+            <Route path="/coach" element={<Coach />} />
           </Route>
         </Route>
         <Route path="*" element={<Fallback />} />

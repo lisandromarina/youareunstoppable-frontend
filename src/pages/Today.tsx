@@ -1,12 +1,15 @@
 import { useState } from 'react'
-import { Navigate } from 'react-router'
+import { Link, Navigate } from 'react-router'
 import { cn } from 'cn'
 import type { Commitment, Selection, Upcoming } from '../api/record'
 import { identityTint } from '../components/tints'
 import { Sheet, SheetChoice } from '../components/Sheet'
 import { TomorrowList } from '../components/TomorrowList'
 import { Screen } from '../components/look'
+import { UpgradePrompt } from '../components/UpgradePrompt'
 import { phaseMoment, useRecord } from '../data/record'
+import { coachEntitled } from '../session/access'
+import { useSession } from '../session/store'
 
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 
@@ -33,11 +36,6 @@ function fromCommitment(commitment: Commitment): Schedulable {
     weekdays: commitment.weekdays,
     month_day: commitment.month_day,
   }
-}
-
-function mobileLede(identities: number) {
-  if (identities > 1) return 'Keep one promise under each identity and both days count.'
-  return 'Keep one promise and the day counts.'
 }
 
 function desktopLede(kept: number, total: number, closed: boolean) {
@@ -80,6 +78,9 @@ export function Today() {
   const [days, setDays] = useState<number[]>([])
   const [monthDay, setMonthDay] = useState(1)
   const [lit, setLit] = useState<string | null>(null)
+  const user = useSession((state) => state.user)
+  const entitled = coachEntitled(user)
+  const [upgrade, setUpgrade] = useState(false)
 
   if (status === 'empty') return <Navigate to="/begin" replace />
   if (!record) return null
@@ -167,15 +168,9 @@ export function Today() {
     <Screen className="max-w-lg! pb-28 lg:max-w-6xl! lg:px-10 lg:pt-10 lg:pb-12">
       <p className="text-[15px] font-semibold text-primary">{writtenDay(record.today.date)}</p>
       <h1 className="mt-2 text-[3.15rem] leading-none font-extrabold tracking-tight lg:text-[3.35rem]">
-        <span className="lg:hidden">Today.</span>
-        <span className="hidden lg:inline">One day is yours.</span>
+        One day is yours.
       </h1>
-      <p className="mt-3 max-w-sm text-[17px] leading-snug text-foreground/80 lg:hidden">
-        {mobileLede(record.selections.length)}
-      </p>
-      <p className="mt-3 hidden text-[18px] text-foreground/80 lg:block">
-        {desktopLede(kept, commitments.length, closed)}
-      </p>
+      <p className="mt-3 max-w-sm text-[18px] text-foreground/80">{desktopLede(kept, commitments.length, closed)}</p>
 
       <div className="mt-8 grid gap-8 lg:grid-cols-2 lg:gap-x-10">
         {columns.map((column) => (
@@ -192,11 +187,12 @@ export function Today() {
         ))}
       </div>
 
-      <p className="mt-10 hidden max-w-xl text-[14px] text-muted-foreground lg:block">
+      <p className="mt-8 max-w-xl text-[14px] text-muted-foreground">
         {record.selections.length > 1
           ? 'Each identity counts on its own. Keep one promise under it and that day is yours.'
           : 'Keep one promise and the day is yours.'}
       </p>
+      {entitled ? <ProCoach /> : <LockedCoach onUnlock={() => setUpgrade(true)} />}
 
       {record.today.coming_up?.length > 0 && !closed ? (
             <section className="mt-8">
@@ -236,7 +232,17 @@ export function Today() {
             </p>
           ) : null}
 
-      {closed ? <TomorrowList items={record.tomorrow} showIdentity={record.selections.length > 1} /> : null}
+      <TomorrowList
+        items={record.tomorrow}
+        showIdentity={record.selections.length > 1}
+        cards
+        aside={closed ? undefined : 'If you show up today'}
+      />
+      {upgrade ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 px-4">
+          <UpgradePrompt onClose={() => setUpgrade(false)} />
+        </div>
+      ) : null}
 
       <Sheet open={sheet?.kind === 'menu'} title="Today" onClose={() => setSheet(null)}>
         <SheetChoice
@@ -247,7 +253,9 @@ export function Today() {
           label="Skip this occurrence"
           onClick={() => sheet?.kind === 'menu' && setSheet({ kind: 'skip', commitment: sheet.commitment })}
         />
-        {sheet?.kind === 'menu' && sheet.commitment.recurrence !== 'daily' ? (
+        {sheet?.kind === 'menu' &&
+        sheet.commitment.recurrence !== 'daily' &&
+        sheet.commitment.recurrence !== 'once' ? (
           <SheetChoice label="Change days" onClick={() => openDays(fromCommitment(sheet.commitment))} />
         ) : null}
       </Sheet>
@@ -339,6 +347,73 @@ export function Today() {
   )
 }
 
+function ProCoach() {
+  return (
+    <section className="mt-6 max-w-2xl rounded-[1.35rem] border border-white/10 bg-card p-5">
+      <p className="flex items-center gap-2 text-[12px] font-extrabold tracking-[0.16em]">
+        YOUR COACH
+        <ProMark />
+      </p>
+      <p className="mt-3 max-w-xl text-[15px] leading-relaxed text-foreground/80">
+        Tell me what you can already do and what you want to work on. I’ll size each day to how you’re showing up.
+      </p>
+      <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+        <Link
+          to="/coach"
+          className="inline-flex flex-1 items-center justify-center rounded-2xl bg-primary px-4 py-3.5 text-[15px] font-extrabold text-primary-foreground"
+        >
+          Talk with your coach →
+        </Link>
+        <Link
+          to="/coach?adjust=1"
+          className="inline-flex items-center justify-center rounded-2xl border border-white/10 bg-white/5 px-4 py-3.5 text-[15px] font-semibold sm:px-5"
+        >
+          Adjust today
+        </Link>
+      </div>
+    </section>
+  )
+}
+
+function LockedCoach({ onUnlock }: { onUnlock: () => void }) {
+  return (
+    <section className="mt-6 max-w-2xl rounded-[1.35rem] border border-dashed border-white/15 bg-card/70 p-5">
+      <p className="flex items-center gap-2 text-[12px] font-extrabold tracking-[0.16em] text-foreground/80">
+        <LockIcon />
+        YOUR COACH
+        <ProMark />
+      </p>
+      <p className="mt-3 max-w-xl text-[15px] leading-relaxed text-foreground/75">
+        A coach that sizes each day to how you’re showing up. Small when you’re starting, fuller as your streak grows.
+      </p>
+      <button
+        type="button"
+        onClick={onUnlock}
+        className="mt-4 w-full rounded-2xl bg-primary px-4 py-3.5 text-[15px] font-extrabold text-primary-foreground sm:w-auto sm:px-8"
+      >
+        Unlock with Pro →
+      </button>
+    </section>
+  )
+}
+
+function ProMark() {
+  return (
+    <span className="rounded-full bg-primary px-2 py-0.5 text-[10px] font-extrabold tracking-wide text-primary-foreground">
+      PRO
+    </span>
+  )
+}
+
+function LockIcon() {
+  return (
+    <svg viewBox="0 0 16 16" className="size-3.5 text-foreground/70" aria-hidden>
+      <rect x="3.2" y="7" width="9.6" height="6.5" rx="1.4" fill="none" stroke="currentColor" strokeWidth="1.4" />
+      <path d="M5.2 7V5.2a2.8 2.8 0 0 1 5.6 0V7" fill="none" stroke="currentColor" strokeWidth="1.4" />
+    </svg>
+  )
+}
+
 function PromiseRow({
   commitment,
   closed,
@@ -386,12 +461,19 @@ function PromiseRow({
               done ? 'text-primary' : 'text-muted-foreground',
             )}
           >
-            {commitment.cadence.toUpperCase()}
+            {commitment.recurrence === 'once' && commitment.due_on
+              ? `ONCE · ${commitment.due_on}`
+              : commitment.cadence.toUpperCase()}
             {done ? ' · KEPT' : skipped ? ' · SKIPPED' : ''}
           </span>
           <span className={cn('mt-1 block text-[18px] leading-snug font-extrabold', skipped && 'text-white/35')}>
             {commitment.implementation.title}
           </span>
+          {commitment.reason ? (
+            <span className="mt-1 block text-sm font-normal leading-relaxed text-muted-foreground">
+              {commitment.reason}
+            </span>
+          ) : null}
         </span>
       </button>
       {closed ? null : (
