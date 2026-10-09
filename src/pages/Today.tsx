@@ -1,11 +1,10 @@
 import { useState } from 'react'
-import { Navigate } from 'react-router'
+import { Navigate, useNavigate } from 'react-router'
 import { cn } from 'cn'
 import type { Commitment, Selection, Upcoming } from '../api/record'
-import { identityTint } from '../components/tints'
 import { Sheet, SheetChoice } from '../components/Sheet'
-import { TomorrowList } from '../components/TomorrowList'
-import { Screen } from '../components/look'
+import { TomorrowList, tomorrowLabel } from '../components/TomorrowList'
+import { PrimaryButton, Screen, WarmGlow } from '../components/look'
 import { phaseMoment, useRecord } from '../data/record'
 
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
@@ -35,17 +34,27 @@ function fromCommitment(commitment: Commitment): Schedulable {
   }
 }
 
-function mobileLede(identities: number) {
-  if (identities > 1) return 'Keep one promise under each identity and both days count.'
-  return 'Keep one promise and the day counts.'
+function handledLine(handled: number, total: number) {
+  if (total === 0) return 'Nothing is due today.'
+  const noun = total === 1 ? 'promise' : 'promises'
+  return `${handled} of ${total} ${noun} handled. The rest can wait.`
 }
 
-function desktopLede(kept: number, total: number, closed: boolean) {
-  if (closed) return 'You showed up today.'
-  if (total === 0) return 'Nothing is due today.'
-  if (kept >= total) return total === 1 ? 'You kept today’s promise.' : 'You kept today’s promises.'
-  const noun = total === 1 ? 'promise' : 'promises'
-  return `${kept} of ${total} ${noun} kept. The rest can wait.`
+function keptDaysLine(count: number) {
+  const noun = count === 1 ? 'day' : 'days'
+  return `${count} ${noun} you kept promises to yourself.`
+}
+
+function shortWhen(when: string) {
+  return when
+    .replaceAll('Monday', 'Mon')
+    .replaceAll('Tuesday', 'Tue')
+    .replaceAll('Wednesday', 'Wed')
+    .replaceAll('Thursday', 'Thu')
+    .replaceAll('Friday', 'Fri')
+    .replaceAll('Saturday', 'Sat')
+    .replaceAll('Sunday', 'Sun')
+    .replaceAll(', ', ' · ')
 }
 
 function writtenDay(iso: string) {
@@ -68,6 +77,7 @@ function fromUpcoming(item: Upcoming): Schedulable {
 }
 
 export function Today() {
+  const navigate = useNavigate()
   const status = useRecord((state) => state.status)
   const record = useRecord((state) => state.record)
   const pending = useRecord((state) => state.pending)
@@ -76,6 +86,7 @@ export function Today() {
   const replace = useRecord((state) => state.replace)
   const skip = useRecord((state) => state.skip)
   const schedule = useRecord((state) => state.schedule)
+  const showedUp = useRecord((state) => state.showedUp)
   const [sheet, setSheet] = useState<SheetState>(null)
   const [days, setDays] = useState<number[]>([])
   const [monthDay, setMonthDay] = useState(1)
@@ -155,88 +166,92 @@ export function Today() {
     }
   }
 
-  const kept = commitments.filter((item) => item.status === 'done').length
+  async function onShowedUp() {
+    try {
+      await showedUp()
+      navigate('/day-complete')
+    } catch {
+      return
+    }
+  }
+
+  const handled = commitments.filter((item) => item.status !== 'open').length
+  const left = commitments.length - handled
+  const ready = left === 0
   const columns = record.selections
     .map((selection) => ({
       selection,
       commitments: record.today.groups.find((group) => group.identity_id === selection.identity_id)?.commitments ?? [],
+      upcoming: (record.today.coming_up ?? []).filter((item) => item.identity_name === selection.identity_name),
     }))
-    .filter((column) => column.commitments.length > 0)
+    .filter((column) => column.commitments.length > 0 || column.upcoming.length > 0)
 
   return (
-    <Screen className="max-w-lg! pb-28 lg:max-w-6xl! lg:px-10 lg:pt-10 lg:pb-12">
-      <p className="text-[15px] font-semibold text-primary">{writtenDay(record.today.date)}</p>
-      <h1 className="mt-2 text-[3.15rem] leading-none font-extrabold tracking-tight lg:text-[3.35rem]">
-        <span className="lg:hidden">Today.</span>
-        <span className="hidden lg:inline">One day is yours.</span>
-      </h1>
-      <p className="mt-3 max-w-sm text-[17px] leading-snug text-foreground/80 lg:hidden">
-        {mobileLede(record.selections.length)}
-      </p>
-      <p className="mt-3 hidden text-[18px] text-foreground/80 lg:block">
-        {desktopLede(kept, commitments.length, closed)}
-      </p>
-
-      <div className="mt-8 grid gap-8 lg:grid-cols-2 lg:gap-x-10">
-        {columns.map((column) => (
-          <IdentityColumn
-            key={column.selection.identity_id}
-            selection={column.selection}
-            commitments={column.commitments}
-            closed={closed}
-            pending={pending}
-            lit={lit}
-            onToggle={(id) => void onToggle(id)}
-            onMenu={(commitment) => setSheet({ kind: 'menu', commitment })}
-          />
-        ))}
+    <Screen
+      className={cn(
+        'max-w-lg! lg:max-w-6xl! lg:px-10 lg:pt-10 lg:pb-12',
+        closed ? 'pb-28' : 'pb-56',
+      )}
+    >
+      <div className="mx-auto w-full max-w-lg">
+        <p className="text-[12px] font-extrabold tracking-[0.18em] text-primary">
+          {writtenDay(record.today.date).toUpperCase()}
+        </p>
+        {closed ? (
+          <ClosedDay recordDate={record.today.date} promisesKept={record.promises_kept} columns={columns} tomorrow={record.tomorrow} />
+        ) : (
+          <>
+            <div className="mt-6 size-16 rounded-lg border-2 border-dashed border-white/25" aria-hidden />
+            <h1 className="mt-6 text-[3.15rem] leading-none font-extrabold tracking-tight">One day is yours.</h1>
+            <p className="mt-4 text-[17px] text-foreground/75">{handledLine(handled, commitments.length)}</p>
+            <div className="mt-10 flex flex-col gap-10">
+              {columns.map((column) => (
+                <IdentityColumn
+                  key={column.selection.identity_id}
+                  selection={column.selection}
+                  commitments={column.commitments}
+                  upcoming={column.upcoming}
+                  pending={pending}
+                  lit={lit}
+                  onToggle={(id) => void onToggle(id)}
+                  onMenu={(commitment) => setSheet({ kind: 'menu', commitment })}
+                  onDays={openDays}
+                />
+              ))}
+            </div>
+            {error ? (
+              <p className="mt-4 text-sm font-semibold text-destructive" role="alert">
+                {error}
+              </p>
+            ) : null}
+            <div className="fixed inset-x-0 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-30 border-t border-white/8 bg-background/95 px-6 py-3 backdrop-blur-xl lg:static lg:inset-auto lg:z-auto lg:mt-10 lg:border-0 lg:bg-transparent lg:px-0 lg:py-0 lg:backdrop-blur-none">
+              {ready ? (
+                <PrimaryButton
+                  className="uppercase tracking-[0.16em] lg:max-w-none"
+                  type="button"
+                  disabled={pending}
+                  onClick={() => void onShowedUp()}
+                >
+                  I showed up
+                </PrimaryButton>
+              ) : (
+                <button
+                  type="button"
+                  disabled
+                  className="h-auto w-full rounded-2xl bg-white/8 px-5 py-4 text-[13px] font-extrabold tracking-[0.16em] text-white/40 uppercase"
+                >
+                  I showed up
+                </button>
+              )}
+              {left > 0 ? (
+                <p className="mt-3 text-center text-[13px] text-muted-foreground">
+                  {left} left. Keep or skip each promise due today to close the day.
+                </p>
+              ) : null}
+            </div>
+          </>
+        )}
       </div>
-
-      <p className="mt-10 hidden max-w-xl text-[14px] text-muted-foreground lg:block">
-        {record.selections.length > 1
-          ? 'Each identity counts on its own. Keep one promise under it and that day is yours.'
-          : 'Keep one promise and the day is yours.'}
-      </p>
-
-      {record.today.coming_up?.length > 0 && !closed ? (
-            <section className="mt-8">
-              <p className="text-[11px] font-extrabold tracking-[0.14em] text-muted-foreground">COMING UP</p>
-              <ul className="mt-2">
-                {record.today.coming_up.map((item) => (
-                  <li key={item.planned_commitment_id} className="border-b border-white/8">
-                    <button type="button" className="w-full py-3 text-left" onClick={() => openDays(fromUpcoming(item))}>
-                      <span className="block text-[11px] font-extrabold tracking-[0.12em] text-muted-foreground">
-                        <span
-                          style={{
-                            color: identityTint(
-                              record.selections.find((selection) => selection.identity_name === item.identity_name)
-                                ?.identity_id ?? '',
-                            ),
-                          }}
-                        >
-                          {item.identity_name.toUpperCase()}
-                        </span>
-                        {' · '}
-                        {item.cadence.toUpperCase()}
-                      </span>
-                      <span className="mt-1 block text-[15px] font-semibold">{item.title}</span>
-                      <span className="mt-1 block text-sm text-muted-foreground">
-                        {item.objective} · {item.when}
-                      </span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          ) : null}
-
-          {error ? (
-            <p className="mt-4 text-sm font-semibold text-destructive" role="alert">
-              {error}
-            </p>
-          ) : null}
-
-      {closed ? <TomorrowList items={record.tomorrow} showIdentity={record.selections.length > 1} /> : null}
 
       <Sheet open={sheet?.kind === 'menu'} title="Today" onClose={() => setSheet(null)}>
         <SheetChoice
@@ -341,14 +356,12 @@ export function Today() {
 
 function PromiseRow({
   commitment,
-  closed,
   pending,
   lit,
   onToggle,
   onMenu,
 }: {
   commitment: Commitment
-  closed: boolean
   pending: boolean
   lit: boolean
   onToggle: () => void
@@ -357,27 +370,21 @@ function PromiseRow({
   const done = commitment.status === 'done'
   const skipped = commitment.status === 'skipped'
   return (
-    <div
-      className={cn(
-        'flex items-center gap-2 rounded-[1.25rem] border-2 bg-card px-4 py-4',
-        done ? 'border-primary' : 'border-white/10',
-        lit && 'row-glow',
-      )}
-    >
+    <div className={cn('flex items-center gap-3 px-4 py-4', lit && 'row-glow')}>
       <button
         type="button"
-        disabled={closed || pending}
+        disabled={pending}
         onClick={onToggle}
-        className={cn('flex min-w-0 flex-1 items-center gap-3 text-left', closed && 'cursor-default')}
+        className="flex min-w-0 flex-1 items-center gap-3 text-left"
       >
         <span
           className={cn(
-            'flex size-8 shrink-0 items-center justify-center rounded-full border-2',
-            done ? 'border-primary bg-primary text-primary-foreground' : 'border-white/30',
+            'flex size-8 shrink-0 items-center justify-center rounded-full',
+            done ? 'bg-primary text-primary-foreground' : 'border-2 border-white/30 text-white/40',
             lit && 'check-in',
           )}
         >
-          {done ? <CheckIcon /> : null}
+          {done ? <CheckIcon /> : skipped ? <DashIcon /> : null}
         </span>
         <span className="min-w-0">
           <span
@@ -387,23 +394,21 @@ function PromiseRow({
             )}
           >
             {commitment.cadence.toUpperCase()}
-            {done ? ' · KEPT' : skipped ? ' · SKIPPED' : ''}
+            {done ? ' · KEPT' : skipped ? ' · SKIPPED TODAY' : ''}
           </span>
-          <span className={cn('mt-1 block text-[18px] leading-snug font-extrabold', skipped && 'text-white/35')}>
+          <span className={cn('mt-1 block text-[18px] leading-snug font-extrabold', skipped && 'text-white/40')}>
             {commitment.implementation.title}
           </span>
         </span>
       </button>
-      {closed ? null : (
-        <button
-          type="button"
-          aria-label={`Actions for ${commitment.implementation.title}`}
-          className="px-2 text-lg tracking-widest text-muted-foreground"
-          onClick={onMenu}
-        >
-          ...
-        </button>
-      )}
+      <button
+        type="button"
+        aria-label={`Actions for ${commitment.implementation.title}`}
+        className="px-2 text-lg tracking-widest text-muted-foreground"
+        onClick={onMenu}
+      >
+        ...
+      </button>
     </div>
   )
 }
@@ -411,21 +416,23 @@ function PromiseRow({
 function IdentityColumn({
   selection,
   commitments,
-  closed,
+  upcoming,
   pending,
   lit,
   onToggle,
   onMenu,
+  onDays,
 }: {
   selection: Selection
   commitments: Commitment[]
-  closed: boolean
+  upcoming: Upcoming[]
   pending: boolean
   lit: string | null
   onToggle: (id: string) => void
   onMenu: (commitment: Commitment) => void
+  onDays: (target: Schedulable) => void
 }) {
-  const moment = phaseMoment(selection, closed)
+  const moment = phaseMoment(selection, false)
   const kept = commitments.filter((item) => item.status === 'done').length
   const width = moment.length === 0 ? 0 : Math.min(100, (moment.filled / moment.length) * 100)
 
@@ -435,33 +442,125 @@ function IdentityColumn({
         <h2 className="text-[13px] font-extrabold tracking-[0.14em] text-primary">
           {selection.identity_name.toUpperCase()}
         </h2>
-        <p className="text-[13px] text-muted-foreground">
-          {kept} of {commitments.length} kept
-        </p>
+        {commitments.length > 0 ? (
+          <p className="text-[13px] text-muted-foreground">
+            {kept} of {commitments.length} kept
+          </p>
+        ) : null}
       </div>
-      <p className="mt-2 text-[15px] text-foreground/85">
+      <p className="mt-2 text-[14px] text-muted-foreground">
         {selection.direction_name} · {selection.stage_name} · Day {moment.day}
       </p>
-      <div className="mt-3 h-1 overflow-hidden rounded-full bg-empty">
-        <div className="h-full rounded-full bg-primary" style={{ width: `${width}%` }} />
+      <div className="mt-3 h-px bg-white/10">
+        <div className="h-0.5 rounded-full bg-primary" style={{ width: `${width}%` }} />
       </div>
-      <p className="mt-2 text-[13px] text-muted-foreground">
-        {moment.filled} of {moment.length} shown-up days to move on
-      </p>
-      <div className="mt-4 flex flex-col gap-3">
-        {commitments.map((commitment) => (
-          <PromiseRow
-            key={commitment.id}
-            commitment={commitment}
-            closed={closed}
-            pending={pending}
-            lit={lit === commitment.id}
-            onToggle={() => onToggle(commitment.id)}
-            onMenu={() => onMenu(commitment)}
-          />
-        ))}
-      </div>
+      {commitments.length > 0 ? (
+        <div className="mt-4 overflow-hidden rounded-[1.35rem] border border-white/10 bg-card">
+          {commitments.map((commitment, index) => (
+            <div key={commitment.id} className={cn(index > 0 && 'border-t border-white/8')}>
+              <PromiseRow
+                commitment={commitment}
+                pending={pending}
+                lit={lit === commitment.id}
+                onToggle={() => onToggle(commitment.id)}
+                onMenu={() => onMenu(commitment)}
+              />
+            </div>
+          ))}
+        </div>
+      ) : null}
+      {upcoming.length > 0 ? (
+        <div className="mt-5">
+          <p className="text-[11px] font-extrabold tracking-[0.14em] text-muted-foreground">COMING UP</p>
+          <ul className="mt-2">
+            {upcoming.map((item) => (
+              <li key={item.planned_commitment_id} className="border-b border-white/8 py-3">
+                <div className="flex items-baseline justify-between gap-3">
+                  <span className="text-[16px] font-semibold">{item.title}</span>
+                  <button
+                    type="button"
+                    className="shrink-0 text-[14px] text-foreground/80 underline decoration-white/30 underline-offset-4"
+                    onClick={() => onDays(fromUpcoming(item))}
+                  >
+                    Change days
+                  </button>
+                </div>
+                <p className="mt-1 text-[13px] text-muted-foreground">
+                  {item.cadence}
+                  {item.when ? ` · ${shortWhen(item.when)}` : ''}
+                </p>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
     </section>
+  )
+}
+
+function ClosedDay({
+  recordDate,
+  promisesKept,
+  columns,
+  tomorrow,
+}: {
+  recordDate: string
+  promisesKept: number
+  columns: { selection: Selection; commitments: Commitment[] }[]
+  tomorrow: Parameters<typeof TomorrowList>[0]['items']
+}) {
+  return (
+    <>
+      <WarmGlow className="mt-6">
+        <div className="size-16 rounded-lg bg-primary" aria-hidden />
+      </WarmGlow>
+      <h1 className="mt-6 text-[3.15rem] leading-none font-extrabold tracking-tight">You showed up.</h1>
+      <p className="mt-4 text-[17px] text-foreground/70">{keptDaysLine(promisesKept)}</p>
+      <p className="mt-10 text-[11px] font-extrabold tracking-[0.16em] text-muted-foreground">TODAY</p>
+      {columns
+        .filter((column) => column.commitments.length > 0)
+        .map((column) => {
+          const kept = column.commitments.filter((item) => item.status === 'done').length
+          return (
+            <section key={column.selection.identity_id} className="mt-5">
+              <div className="flex items-baseline justify-between gap-3">
+                <h2 className="text-[13px] font-extrabold tracking-[0.14em] text-primary">
+                  {column.selection.identity_name.toUpperCase()}
+                </h2>
+                <p className="text-[13px] text-muted-foreground">
+                  {kept} of {column.commitments.length} kept
+                </p>
+              </div>
+              <ul className="mt-1">
+                {column.commitments.map((commitment) => {
+                  const done = commitment.status === 'done'
+                  const skipped = commitment.status === 'skipped'
+                  return (
+                    <li key={commitment.id} className="flex items-center gap-3 border-b border-white/8 py-3">
+                      <span
+                        className={cn(
+                          'flex size-6 shrink-0 items-center justify-center rounded-full',
+                          done ? 'bg-primary text-primary-foreground' : 'border border-white/25 text-white/40',
+                        )}
+                      >
+                        {done ? <CheckIcon /> : skipped ? <DashIcon /> : null}
+                      </span>
+                      <span className={cn('min-w-0 flex-1 text-[16px] font-semibold', skipped && 'text-white/40')}>
+                        {commitment.implementation.title}
+                      </span>
+                      <span className="shrink-0 text-[13px] text-muted-foreground">
+                        {skipped ? 'Skipped' : commitment.cadence}
+                      </span>
+                    </li>
+                  )
+                })}
+              </ul>
+            </section>
+          )
+        })}
+      <TomorrowList items={tomorrow} heading={tomorrowLabel(recordDate)} />
+      <p className="mt-8 text-[15px] text-muted-foreground">Nothing left for today. Rest.</p>
+    </>
   )
 }
 
@@ -476,6 +575,14 @@ function CheckIcon() {
         strokeLinecap="round"
         strokeLinejoin="round"
       />
+    </svg>
+  )
+}
+
+function DashIcon() {
+  return (
+    <svg viewBox="0 0 16 16" className="size-3.5" aria-hidden>
+      <path d="M4 8h8" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
     </svg>
   )
 }

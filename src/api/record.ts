@@ -216,3 +216,9 @@ export function scheduleCommitment(
     body: JSON.stringify(body),
   })
 }
+
+export function showedUp(): Promise<Transformation> {
+  return api<Transformation>(withOn('/api/transformation/today/showed-up'), {
+    method: 'POST',
+  })
+}
