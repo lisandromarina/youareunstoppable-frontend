@@ -168,7 +168,7 @@ function Dots({ length, shown, closed }: { length: number; shown: number; closed
           <span
             key={index}
             className={cn(
-              'size-7 rounded-full sm:size-8',
+              'size-7 rounded-[6px] sm:size-8',
               done && 'bg-primary',
               current && 'border-2 border-primary',
               !done && !current && 'bg-empty',

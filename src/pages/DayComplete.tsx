@@ -1,6 +1,6 @@
 import { Navigate, useNavigate } from 'react-router'
 
-import { TomorrowList } from '../components/TomorrowList'
+import { TomorrowList, tomorrowLabel } from '../components/TomorrowList'
 import { PrimaryButton, Screen, WarmGlow } from '../components/look'
 import { continueBecoming, shiftsFor, useRecord, type PhaseShift } from '../data/record'
 
@@ -37,7 +37,7 @@ export function DayComplete() {
           </p>
         </div>
       )}
-      <TomorrowList items={record.tomorrow} showIdentity={record.selections.length > 1} />
+      <TomorrowList items={record.tomorrow} heading={tomorrowLabel(record.today.date)} />
       <PrimaryButton
         className="mt-10"
         type="button"

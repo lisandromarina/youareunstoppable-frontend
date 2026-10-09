@@ -8,6 +8,7 @@ import {
   resetTransformation,
   scheduleCommitment,
   skipCommitment,
+  showedUp as closeDay,
   startTransformation,
   toggleCommitment,
   updateTransformation,
@@ -77,6 +78,11 @@ export function shiftsFor(userId: string | null, date: string): PhaseShift[] {
   }
 }
 
+function writeCeremonyStore(userId: string | null, date: string, shifts: PhaseShift[]) {
+  if (!userId) return
+  sessionStorage.setItem(ceremonyStorageKey(userId), JSON.stringify({ date, shifts }))
+}
+
 function clearCeremonyStore(userId: string | null) {
   if (userId) sessionStorage.removeItem(ceremonyStorageKey(userId))
 }
@@ -104,6 +110,7 @@ type RecordState = {
   replace: (id: string, implementationId: string) => Promise<void>
   skip: (id: string) => Promise<void>
   schedule: (id: string, body: { weekdays?: number[]; month_day?: number }) => Promise<void>
+  showedUp: () => Promise<void>
   reset: () => Promise<void>
   clearCeremony: () => void
 }
@@ -365,6 +372,20 @@ export const useRecord = create<RecordState>((set, get) => ({
     }
   },
 
+  showedUp: async () => {
+    const before = get().record
+    set({ pending: true, error: null })
+    try {
+      const record = await closeDay()
+      const shifts = before ? phaseShifts(before, record) : []
+      writeCeremonyStore(get().accountId, record.today.date, shifts)
+      set({ record, pending: false, ceremony: { shifts } })
+    } catch (caught) {
+      set({ pending: false, error: errorMessage(caught) })
+      throw caught
+    }
+  },
+
   reset: async () => {
     set({ pending: true, error: null })
     try {
@@ -385,5 +406,8 @@ export const useRecord = create<RecordState>((set, get) => ({
     }
   },
 
-  clearCeremony: () => set({ ceremony: null }),
+  clearCeremony: () => {
+    clearCeremonyStore(get().accountId)
+    set({ ceremony: null })
+  },
 }))
