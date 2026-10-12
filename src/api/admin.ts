@@ -1,4 +1,5 @@
 import { api } from './client'
+import { clientDate } from './record'
 
 export type OnboardingStepName = 'begin' | 'identity' | 'direction'
 
@@ -10,9 +11,17 @@ export type Overview = {
   started_path: number
   days_completed: number
   active_users: number
-  retention_1d: number | null
-  retention_3d: number | null
-  retention_7d: number | null
+  opened_today: number
+  closed_today: number
+  commitments_done: number
+  commitments_skipped: number
+  return_1d: number | null
+  closed_1d: number | null
+  return_3d: number | null
+  closed_3d: number | null
+  return_7d: number | null
+  closed_7d: number | null
+  day1_closure: number | null
 }
 
 export type FunnelStep = {
@@ -23,13 +32,18 @@ export type FunnelStep = {
   percent_of_previous: number | null
 }
 
+export type CohortDay = {
+  returned: number | null
+  closed: number | null
+}
+
 export type Cohort = {
   date: string
   size: number
-  day_1: number | null
-  day_3: number | null
-  day_7: number | null
-  day_14: number | null
+  day_1: CohortDay | null
+  day_3: CohortDay | null
+  day_7: CohortDay | null
+  day_14: CohortDay | null
 }
 
 export type Analytics = {
@@ -39,7 +53,7 @@ export type Analytics = {
 }
 
 export function loadAnalytics(): Promise<Analytics> {
-  return api<Analytics>('/api/admin/analytics')
+  return api<Analytics>(`/api/admin/analytics?on=${clientDate()}`)
 }
 
 export function markOnboarding(step: OnboardingStepName): Promise<void> {
