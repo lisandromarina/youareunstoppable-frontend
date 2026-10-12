@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, Navigate } from 'react-router'
 
-import { loadAnalytics, type Analytics, type Cohort } from '../api/admin'
+import { loadAnalytics, type Analytics, type Cohort, type CohortDay } from '../api/admin'
 import { errorMessage } from '../api/client'
 import { Screen } from '../components/look'
 import { useSession } from '../session/store'
@@ -27,7 +27,8 @@ export function Admin() {
       <p className="text-[11px] font-extrabold tracking-[0.14em] text-muted-foreground">Internal</p>
       <h1 className="mt-2 text-[32px] font-extrabold tracking-tight">Where people stop</h1>
       <p className="mt-3 max-w-xl text-[15px] text-muted-foreground">
-        Showing up means a closed day. Retention is the share who closed a day that many days after they signed up.
+        Return is a later day they opened the app. Closed is that day finished. Signing up today is not a miss.
+        These numbers show where people stop.
       </p>
       <Link to="/profile" className="mt-4 inline-block text-sm font-bold text-primary">
         Back to profile
@@ -48,6 +49,9 @@ function Dashboard({ analytics }: { analytics: Analytics }) {
     <>
       <section className="mt-10">
         <h2 className="text-[11px] font-extrabold tracking-[0.14em] text-muted-foreground">Overview</h2>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Opened today and closed today are people. Promises completed and skipped are commitments.
+        </p>
         <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
           <Stat label="Total users" value={String(overview.total_users)} />
           <Stat label="New today" value={String(overview.new_users_today)} />
@@ -55,10 +59,18 @@ function Dashboard({ analytics }: { analytics: Analytics }) {
           <Stat label="New, 30 days" value={String(overview.new_users_30d)} />
           <Stat label="Started a path" value={String(overview.started_path)} />
           <Stat label="Days completed" value={String(overview.days_completed)} />
+          <Stat label="Opened today" value={String(overview.opened_today)} />
+          <Stat label="Closed today" value={String(overview.closed_today)} />
+          <Stat label="Promises completed" value={String(overview.commitments_done)} />
+          <Stat label="Promises skipped" value={String(overview.commitments_skipped)} />
           <Stat label="Active, last 7 days" value={String(overview.active_users)} />
-          <Stat label="1-day retention" value={percent(overview.retention_1d)} />
-          <Stat label="3-day retention" value={percent(overview.retention_3d)} />
-          <Stat label="7-day retention" value={percent(overview.retention_7d)} />
+          <Stat label="Returned next day" value={percent(overview.return_1d)} />
+          <Stat label="Closed next day" value={percent(overview.closed_1d)} />
+          <Stat label="Returned, day 3" value={percent(overview.return_3d)} />
+          <Stat label="Closed, day 3" value={percent(overview.closed_3d)} />
+          <Stat label="Returned, day 7" value={percent(overview.return_7d)} />
+          <Stat label="Closed, day 7" value={percent(overview.closed_7d)} />
+          <Stat label="Day 1 closure" value={percent(overview.day1_closure)} />
         </div>
       </section>
 
@@ -89,7 +101,9 @@ function Dashboard({ analytics }: { analytics: Analytics }) {
 
       <section className="mt-12">
         <h2 className="text-[11px] font-extrabold tracking-[0.14em] text-muted-foreground">Cohorts</h2>
-        <p className="mt-2 text-sm text-muted-foreground">A dash means that day has not arrived yet.</p>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Each cell is who returned, then who closed that day. A dash means that day has not arrived.
+        </p>
         <div className="mt-4 overflow-x-auto">
           <table className="w-full min-w-[36rem] text-left text-sm">
             <thead>
@@ -107,10 +121,10 @@ function Dashboard({ analytics }: { analytics: Analytics }) {
                 <tr key={row.date} className="border-b border-white/8">
                   <td className="py-3 pr-4 font-semibold">{cohortLabel(row)}</td>
                   <td className="py-3 pr-4">{row.size}</td>
-                  <td className="py-3 pr-4">{percent(row.day_1)}</td>
-                  <td className="py-3 pr-4">{percent(row.day_3)}</td>
-                  <td className="py-3 pr-4">{percent(row.day_7)}</td>
-                  <td className="py-3">{percent(row.day_14)}</td>
+                  <td className="py-3 pr-4">{pair(row.day_1)}</td>
+                  <td className="py-3 pr-4">{pair(row.day_3)}</td>
+                  <td className="py-3 pr-4">{pair(row.day_7)}</td>
+                  <td className="py-3">{pair(row.day_14)}</td>
                 </tr>
               ))}
             </tbody>
@@ -133,6 +147,11 @@ function Stat({ label, value }: { label: string; value: string }) {
 function percent(value: number | null): string {
   if (value == null) return '—'
   return `${value}%`
+}
+
+function pair(value: CohortDay | null): string {
+  if (value == null) return '—'
+  return `${percent(value.returned)} / ${percent(value.closed)}`
 }
 
 function cohortLabel(row: Cohort): string {
