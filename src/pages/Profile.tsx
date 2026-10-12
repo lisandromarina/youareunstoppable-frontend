@@ -61,19 +61,21 @@ export function Profile() {
           <p className="mt-6 text-[11px] font-extrabold tracking-[0.16em] text-muted-foreground lg:mt-8">ACCOUNT</p>
           <div className="mt-3 overflow-hidden rounded-[1.35rem] border border-white/8 bg-card">
             <Billing email={user.email} subscription={user.subscription} />
-            <button
-              type="button"
+            {user.role === 'admin' ? (
+              <button
+                type="button"
                 className="flex w-full items-center justify-between gap-4 border-t border-white/8 px-5 py-3.5 text-left"
-              onClick={() => navigate(user.role === 'admin' ? '/admin' : '/progress')}
-            >
-              <span>
-                <span className="block text-[16px] font-extrabold">Analytics</span>
-                <span className="mt-0.5 block text-[13px] text-muted-foreground">
-                  Your activity and trends over time
+                onClick={() => navigate('/admin')}
+              >
+                <span>
+                  <span className="block text-[16px] font-extrabold">Analytics</span>
+                  <span className="mt-0.5 block text-[13px] text-muted-foreground">
+                    Your activity and trends over time
+                  </span>
                 </span>
-              </span>
-              <Chevron />
-            </button>
+                <Chevron />
+              </button>
+            ) : null}
             <SignOut />
           </div>
         </div>
